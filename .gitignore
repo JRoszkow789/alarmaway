@@ -1,0 +1,7 @@
+runserver.*
+config.*
+shell.*
+*.*c
+*.*~
+*/*.*c
+*/*.*~

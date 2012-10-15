@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>{% block title %}Are You Up?{% endblock %}</title>
+  <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.css')}}" type="text/css" />
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="span8 offset2 t-left">
+        <ul class="unstyled">
+        {% for msg in get_flashed_messages() %}
+          <li>{{ msg }}</li>
+        {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
