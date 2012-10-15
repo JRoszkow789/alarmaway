@@ -1,3 +1,4 @@
+set foreign_key_checks = 0;
 drop table if exists users;
 create table users (
 	user_id mediumint unsigned not null auto_increment,
@@ -18,3 +19,4 @@ create table alarms (
 	primary key (alarm_id),
 	foreign key (parent_id) references users (user_id)
 );
+set foreign_key_checks = 1;

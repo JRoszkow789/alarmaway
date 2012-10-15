@@ -1,3 +1,4 @@
+from __future__ import with_statement
 from flask import Flask, render_template, g, request, flash, redirect,\
     url_for, session, _app_ctx_stack
 from twilio import twiml
@@ -10,6 +11,7 @@ import datetime
 import re
 from werkzeug import generate_password_hash, check_password_hash
 from apscheduler.scheduler import Scheduler
+from decorators import requires_login
 
 
 app = Flask(__name__)
@@ -27,6 +29,7 @@ EMAIL_RE = re.compile( # Copied from Django EmailValidator source
     r')@(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$',
     re.IGNORECASE)
 
+
 def get_db():
     """Opens a new database connection if there is none yet for the
     current application context.
@@ -40,7 +43,6 @@ def get_db():
             port=app.config['DB_PORT'],
             db=app.config['DATABASE'],
             cursorclass=MySQLdb.cursors.DictCursor)
-        app.logger.debug('db connection established')
     return top.mysql_db
 
 
@@ -50,7 +52,31 @@ def close_database(exception):
     top = _app_ctx_stack.top
     if hasattr(top, 'mysql_db'):
         top.mysql_db.close()
-        app.logger.debug('db connection closed')
+
+
+def init_db(pw=None):
+    """Creates the database tables. Added password for security."""
+    if pw is None:
+        app.logger.warn('init_db called with no password')
+        return "Must enter a password."
+    elif pw != app.config['INIT_DB_PW']:
+        app.logger.warn('init_db called with incorrect password')
+        return "Incorrect password. Database initialization failed."
+    else:
+        app.logger.warn('init_db called with correct password')
+        with app.app_context():
+            db = get_db()
+            cur = db.cursor()
+            with app.open_resource('schema.sql') as f:
+                lines = f.read().split(';')
+            for line in lines:
+                if line == '\n':
+                    continue
+                app.logger.debug('init_db line to execute: %s' % line)
+                cur.execute(line)
+                app.logger.debug('init_db line successfully executed')
+            db.commit()
+            app.logger.debug('init_db commit_db successful')
 
 
 def query_db(query, args=(), one=False):
@@ -58,14 +84,15 @@ def query_db(query, args=(), one=False):
     cur.execute(query, args)
     rv = cur.fetchone() if one else cur.fetchall()
     # Is this ok?
-    if one and 'alarm_time' in rv.keys():
-        rv['alarm_time'] = (datetime.datetime.min +
-                            rv['alarm_time']).time()
-    elif not one:
-        for row in rv:
-            if 'alarm_time' in row.keys():
-                row['alarm_time'] = (datetime.datetime.min +
-                                     row['alarm_time']).time()
+    # I guess we are deciding no?
+    #if one and 'alarm_time' in rv.keys():
+    #    rv['alarm_time'] = (datetime.datetime.min +
+    #                        rv['alarm_time']).time()
+    #elif not one:
+    #    for row in rv:
+    #        if 'alarm_time' in row.keys():
+    #            row['alarm_time'] = (datetime.datetime.min +
+    #                                 row['alarm_time']).time()
     return rv
 
 
@@ -84,7 +111,6 @@ def validate_alarm_time(alarm_time):
     rv = (datetime.time(hour=int(hours),
                         minute=int(mins)) if alarm_time is not None
                                           else None)
-    app.logger.debug('alarm_time validation result: %s' % rv)
     return rv
 
 
@@ -95,11 +121,9 @@ def validate_phone_number(num):
 
 
 def validate_email(email):
-    return False if email is None else True
+    rv = EMAIL_RE.search(email)
+    return None if rv is None else rv.group()
 
-
-def format_alarm(alarm):
-    return str(alarm)
 
 def set_user_alarm(user_phone, alarm_time):
     sched.add_cron_job(
@@ -110,9 +134,6 @@ def set_user_alarm(user_phone, alarm_time):
         minute=alarm_time.minute)
 
     snooze_time = add_secs(alarm_time, 180)
-    app.logger.debug(
-        'alarm: %s, snooze: %s' %
-        (alarm_time, snooze_time))
     sched.add_cron_job(
         wakeup_text,
         args=[user_phone],
@@ -122,21 +143,37 @@ def set_user_alarm(user_phone, alarm_time):
 
 
 def wakeup_call(phone):
-    app.logger.debug('wakeup_call!')
+    """Place a request to the phone service to call the number provided
+    by the 'phone' parameter. The call's '_from' telephone number and
+    xml response url, 'url', are stored in the app's configuration file.
+    """
     client = connect_phone()
     call = client.calls.create(
         to=phone,
         from_=app.config['FROM_NUMBER'],
         url=app.config['CALL_URL'])
-    app.logger.debug(call.sid)
-
+    # ??????? return call.sid?????
 
 def wakeup_text(phone):
+    """Place a request to the phone service to send a text message to
+    the phone number provided by the 'phone' parameter. The message's
+    '_from' telephone number and message body, 'body', are stored in
+    the app's configuration file.
+    """
     client = connect_phone()
     message = client.sms.messages.create(
         to=('+1%s' % phone),
         from_=app.config['FROM_NUMBER'],
-        body=('Good Morning! Are you awake yet?'))
+        body=app.config['WAKEUP_MSG_BODY'])
+
+
+def convert_timedelta_to_time(tm):
+    """Hack to change a datetime.timedelta object to a datetime.time
+    object. Creates a 'dummy date' and adds the timedelta, then returns
+    the result's time component.
+    """
+    dummy_datetime = datetime.datetime.min + tm
+    return dummy_datetime.time()
 
 
 def add_secs(tm, secs):
@@ -156,7 +193,6 @@ def before_request():
 
 @app.route('/', methods=['GET', 'POST'])
 def homepage():
-    app.logger.debug('homepage')
     if request.method == 'POST':
         # Retrieve the user's input values and validate them
         input_alarm_time = validate_alarm_time(request.form['time'])
@@ -181,7 +217,7 @@ def homepage():
                 values (%s, %s, %s)',
                 [created_user_id, 0, input_alarm_time])
             db.commit()
-            app.logger.debug(
+            app.logger.info(
                 'user successfully created, id: %s' %
                 created_user_id)
             session['user_id'] = created_user_id
@@ -204,19 +240,20 @@ def verify():
     if request.method == 'POST':
         input_email = request.form['user_email']
         app.logger.debug('user email: %s' % input_email)
+        validated_email = validate_email(input_email)
+        app.logger.debug('validate_email result: %s' % validated_email)
         input_pw = request.form['user_pw']
-        app.logger.debug('user pw: %s' % input_pw)
         input_ver =int( request.form['user_ver_code'])
         app.logger.debug('user ver input: %s' % input_ver)
 
-        if not validate_email(input_email):
+        if not validated_email:
             flash('invalid email')
         elif input_pw is None:
             flash('You must enter a password!')
         elif input_ver != session['ver_code']:
             flash('invalid verification code')
             app.logger.debug(
-                'ver code failed -- entry: %s, type: %s, stored: %s,\
+                'ver code failed -- entry: %s, type: %s, expected: %s,\
                 type: %s' %
                 (input_ver, type(input_ver),
                 session['ver_code'], type(session['ver_code'])))
@@ -225,21 +262,24 @@ def verify():
             cur = db.cursor()
             cur.execute(
                 'update users set email=%s, pw_hash=%s where user_id=%s',
-                [input_email, generate_password_hash(input_pw),
+                [validated_email, generate_password_hash(input_pw),
                 session['user_id']])
             cur.execute(
                 'update alarms set active=%s where parent_id=%s',
                 [1, session.get('user_id')])
             db.commit()
-            app.logger.debug('email and pw successfully added!')
+            app.logger.info('User update successful')
             alarm_time = query_db(
                 'select alarm_time from alarms where parent_id=%s',
-                session['user_id'], one=True)['alarm_time']
+                session['user_id'], one=True)
+            alarm_time = (
+                convert_timedelta_to_time(alarm_time['alarm_time'])
+                if alarm_time is not None else None)
             user_phone = query_db(
                 'select primary_phone from users where user_id=%s',
                 g.user['user_id'], one=True)['primary_phone']
             set_user_alarm(user_phone, alarm_time)
-            app.logger.debug('alarm set')
+            app.logger.info('User alarm set')
             flash('welcome!')
             session.pop('ver_code', None)
             return redirect(url_for('profile'))
@@ -247,6 +287,7 @@ def verify():
 
 
 @app.route('/profile')
+@requires_login
 def profile():
     if not g.user:
         flash('sorry, must be registered for that page!')
@@ -258,7 +299,8 @@ def profile():
         user_alarm = query_db(
             'select alarm_time from alarms where parent_id=%s',
             g.user['user_id'], one=True)
-        user_alarm = (format_alarm(user_alarm['alarm_time'])
+        user_alarm = (
+            convert_timedelta_to_time(user_alarm['alarm_time'])
             if user_alarm else None)
         return render_template('profile.html',
                                 user_alarm=user_alarm,
@@ -272,9 +314,8 @@ def login():
         return redirect(url_for('profile'))
     elif request.method == 'POST':
         user = query_db(
-            'select %s, %s from users where email=%s',
-            ('user_id', 'pw_hash', request.form['email']), one=True)
-        app.logger.debug('user: %s' % user)
+            'select user_id, pw_hash from users where email=%s',
+            request.form['email'], one=True)
         if user is None:
             flash('Invalid user name')
         elif not check_password_hash(user['pw_hash'],

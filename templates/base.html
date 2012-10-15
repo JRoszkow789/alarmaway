@@ -8,15 +8,33 @@
 <body>
   <div class="container">
     <div class="row">
-      <div class="span8 offset2 t-left">
+      <div class="span6 offset2 t-left">
         <ul class="unstyled">
         {% for msg in get_flashed_messages() %}
           <li>{{ msg }}</li>
         {% endfor %}
         </ul>
       </div>
+      {% if g.user %}
+      <div class="span3 offset1">
+        <div class="btn-group">
+          <a href="#" class="btn dropdown-toggle" data-toggle="dropdown">
+            Your Account <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="{{ url_for('profile') }}">Profile</a>
+            <li><a href="{{ url_for('logout') }}">Logout</a>
+          </ul>
+        </div>
+      </div>
+      {% else %}
+      <div class="span4 t-center">
+        <a href="{{ url_for('login') }}">Have An Account? <strong>Sign In</strong></a>
+      </div>
+      {% endif %}
     </div>
     {% block content %}{% endblock %}
   </div>
+  <script src="http://code.jquery.com/jquery-latest.js"></script>
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
 </body>
 </html>
