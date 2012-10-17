@@ -11,6 +11,7 @@ import datetime
 import re
 from werkzeug import generate_password_hash, check_password_hash
 from apscheduler.scheduler import Scheduler
+from apscheduler.jobstores.sqlalchemy_store import SQLAlchemyJobStore
 from decorators import requires_login
 
 
@@ -19,6 +20,9 @@ app.config.from_object('config')
 
 
 sched = Scheduler()
+sched.add_jobstore(
+        SQLAlchemyJobStore(app.config['JOBSTORE_DB_URI']),
+        'ap_jobstore_db')
 sched.start()
 
 
@@ -66,14 +70,8 @@ def init_db(pw=None):
         app.logger.warn('init_db called with correct password')
         with app.app_context():
             db = get_db()
-            cur = db.cursor()
             with app.open_resource('schema.sql') as f:
-                lines = f.read().split(';')
-            for line in lines:
-                if line == '\n':
-                    continue
-                app.logger.debug('init_db line to execute: %s' % line)
-                cur.execute(line)
+                db.cursor().executemany(f.read(), [])
                 app.logger.debug('init_db line successfully executed')
             db.commit()
             app.logger.debug('init_db commit_db successful')
@@ -83,16 +81,6 @@ def query_db(query, args=(), one=False):
     cur = get_db().cursor()
     cur.execute(query, args)
     rv = cur.fetchone() if one else cur.fetchall()
-    # Is this ok?
-    # I guess we are deciding no?
-    #if one and 'alarm_time' in rv.keys():
-    #    rv['alarm_time'] = (datetime.datetime.min +
-    #                        rv['alarm_time']).time()
-    #elif not one:
-    #    for row in rv:
-    #        if 'alarm_time' in row.keys():
-    #            row['alarm_time'] = (datetime.datetime.min +
-    #                                 row['alarm_time']).time()
     return rv
 
 
@@ -131,7 +119,8 @@ def set_user_alarm(user_phone, alarm_time):
         args=[user_phone],
         day_of_week="*",
         hour=alarm_time.hour,
-        minute=alarm_time.minute)
+        minute=alarm_time.minute,
+        jobstore='ap_jobstore_db')
 
     snooze_time = add_secs(alarm_time, 180)
     sched.add_cron_job(
@@ -139,8 +128,8 @@ def set_user_alarm(user_phone, alarm_time):
         args=[user_phone],
         day_of_week="*",
         hour=snooze_time.hour,
-        minute=snooze_time.minute)
-
+        minute=snooze_time.minute,
+        jobstore='ap_jobstore_db')
 
 def wakeup_call(phone):
     """Place a request to the phone service to call the number provided

@@ -42,7 +42,7 @@
         <option value="06:30">6:30 AM</option>
         <option value="06:45">6:45 AM</option>
        
-        <option value="07:00">7:00 AM</option>
+        <option value="07:00" selected="selected">7:00 AM</option>
         <option value="07:15">7:15 AM</option>
         <option value="07:30">7:30 AM</option>
         <option value="07:45">7:45 AM</option>
@@ -129,10 +129,15 @@
       </select>
       <label>Phone Number</label>
       <input type="text" name="phone" placeholder="e.g. 555-555-5555" />
+      <span class="help-block">Enter the phone number you'd like to use for
+        your AlarmAway wake up call. Make sure to enter a real number, we
+        need to send you a verification code!</span>
+      <br />
       <label class="checkbox">
         <input type="checkbox" name="agrees" />I agree to the <a href="#">terms and conditions.</a>
       </label>
-      <button type="submit" class="btn">Set My Alarm!</button>
+      <br />
+      <button type="submit" class="btn btn-primary btn-large">Send Verification Code!</button>
     </form>
   </div>
 </div>
