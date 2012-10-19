@@ -3,12 +3,25 @@
 <div class="row">
   <div class="span6 offset3 t-left well">
     <form action="{{ url_for('login') }}" method="post">
+      
       <legend>Existing user sign in</legend>
+      
+      
       <label>Email Address</label>
-      <input type="text" name="email" placeholder="e.g. you@example.com" />
-      <label>Password</label>
+      <input type="text" name="email"
+                  placeholder="e.g. you@example.com" />
+      
+      
+      <label>
+        Password
+      </label>
       <input type="password" name="password" />
-      <button type="submit" class="btn">login</button>
+      
+      
+      <button type="submit" class="btn">
+        login
+      </button>
+
     </form>
   </div>
 </div>

@@ -1,4 +1,4 @@
-from app import app
+from alarmaway import app
 from flask_debugtoolbar import DebugToolbarExtension
 
 
