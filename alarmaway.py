@@ -142,7 +142,7 @@ def create_new_user(email, pw_hash):
         return None
     cur.execute(
             'insert into aa_things (thing_owner, thing_name, thing_value)\
-            values (%s, %s, %s)', (new_user_id, 'user', constants.USER))
+            values (%s, %s, %s)', (0, 'user', new_user_id))
     new_user_thing_id = cur.lastrowid
     app.logger.debug(
             'New user_thing created -- thing_id: %s' %
@@ -164,9 +164,10 @@ def create_new_user(email, pw_hash):
 
 def check_phone_verification(verify_attempt):
     if 'uv_code' not in session:
-        app.logger.debug('check_phone_verification -- FAIL: no uv_code')
+        app.logger.debug('check_phone_verification:  NO uv_code in session')
         return False
     else:
+        # TODO is this an issue? What if verify fails stooooopiddd
         sesh_ver = session.pop('uv_code', None)
         app.logger.debug(
                 'check_phone_verification -- sesh_ver: %s, attempt: %s' %
@@ -174,13 +175,60 @@ def check_phone_verification(verify_attempt):
         return int(verify_attempt) == int(sesh_ver)
 
 def add_verified_phone(owner, num):
-    app.logger.debug('NOT IMPLEMENTED: add_verified_phone')
-    pass
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+            'insert into aa_things (thing_owner, thing_name, thing_value)\
+            values (%s, %s, %s)', (owner, 'phone', num))
+    new_phone_id = cur.lastrowid
+    app.logger.debug('New phone record added: %s' % new_phone_id)
+    cur.execute(
+            'insert into aa_things (thing_owner, thing_name, thing_value)\
+            values (%s, %s, %s)', (new_phone_id, 'verification', 1))
+    app.logger.debug('New phone verification successfully added')
+    db.commit()
+
+
+def get_user(user_id):
+    db = get_db()
+    cur = db.cursor()
+    user = query_db(
+            'select thing_id, thing_owner from aa_things where thing_id=%s',
+            user_id, one=True)
+    if rv is not None:
+        app.logger.debug('log_user_in -- user_thing found: %s', user)
+        if cur.execute(
+                'select thing_name, thing_value from aa_things where\
+                thing_owner=%s and thing_name in (%s, %s)',
+                (user['thing_id'], 'email', 'phone')) is not None:
+            user = user + cur.fetchall()
+            app.logger.debug('log_user_in -- user details found:' + user)
+        return user
+    else:
+        app.logger.debug('log_user_in[%s] -- NO user found' % user_id)
+        return None
+
+
+def get_user_thing(user_id, id_only=False):
+    user_thing = query_db(
+            'select (thing_id, thing_value) from aa_things where\
+            thing_name=%s and thing_value=%s', ('user', user_id), one=True)
+    if id_only:
+        return user_thing['thing_id']
+    return user_thing
 
 
 def log_user_in(user_id):
-    app.logger.debug('NOT IMPLEMENTED: log_user_in')
-    pass
+    if not 'user_id' in session:
+        app.logger.debug('log_user_in[pre] NO user id, NO current user')
+    elif 'user_id' in session and g.user:
+        app.logger.debug('log_user_in[pre] YES user_id, YES current user')
+        return
+    else:
+        app.logger.debug('log_user_in[pre] -- YES user_id, NO current user')
+
+    g.user = get_user(user_id)
+    session['user_id'] = rv['thing_owner']
 
 
 def set_user_alarm(user_phone, alarm_time):
@@ -294,35 +342,56 @@ def pre_registration():
 @app.route('/register', methods=['GET', 'POST'])
 def registration():
     if not 'ui_phone' in session:
+        # TODO
+        # TRASH!!!!!
+        # This needs to either redirect or provide an acceptable
+        # registration alternative for a user with no phone. Or register it
+        # as an error and handle that with page state.
+        # JUST DO SOMETHING!
         flash('Register for free in seconds!')
         app.logger.warn('registration page -- no ui_phone in session.')
     error = None
     if request.method == 'POST':
-        input_email = validate_email(request.form['user_email'])
+        # Do a quick basic check for blank fields to filter out some of the
+        # worst responses before needing to call any other functions.
+        input_email = request.form['user_email']
         input_pw = request.form['user_pw']
-        input_verification = check_phone_verification(
-                request.form['user_ver_code'])
-        app.logger.debug('Registration Data valid -- %s, %s' %
-                (input_email, input_verification))
-        if input_email is None:
-            error = 'You must enter a valid email address.'
-        elif input_pw is None:
-            error = 'A password is required to create an account.'
-        elif not input_verification:
-            error = 'Invalid verification code'
+        input_verification = request.form['user_ver_code']
+        if not (input_email and input_pw and input_verification):
+            error = 'Please complete all required fields.'
         else:
-            # All input data is valid, now we can process the new reg
-            new_user_id = create_new_user( # Actually new user's thing id
-                    email=input_email,
-                    pw_hash=generate_password_hash(input_pw))
+            # Check verification code first for optimization reasons, it is
+            # stored in the session (for now at least), while validating the
+            # email address means a db read. More Speed + less db is worth
+            # two LOC being a bit out of the flow!
+            user_verification_valid = check_phone_verification(
+                    input_verification)
+            if not user_verification_valid:
+                error = "Invalid verification code. Please try again."
+            # Now we can handle the lengthier email validation only where
+            # it is actually needed
+            user_email = validate_email(input_email)
+            user_pw_hash = generate_password_hash(input_pw)
+            if not user_email:
+                error = "Invalid email entry, please check your entry."
+            else:
+                # All input data is valid, now we can process the new reg
+                new_user_id = create_new_user(
+                        email=input_email,
+                        pw_hash=user_pw_hash)
             if not new_user_id:
-                app.logger.error('user registration: all data valid,\
-                    new_user_id returned none. Data below: \nemail: %s\n\
-                    new_user_id: %s' % (input_email, new_user_id))
+                app.logger.error(
+                        'user registration: all data valid, new_user_id\
+                        returned none.\nINFO\n------------------------\n\
+                        email: %s\nnew_user_id: %s' %
+                        (input_email, new_user_id))
+                flash(
+                    'Sorry, something happened... We have been notified!')
+                return redirect(url_for('home'))
 
             # Add the user's verified phone number to the database
             add_verified_phone(
-                    owner=new_user_id,
+                    owner=get_user_thing(new_user_id, id_only=True),
                     num=session['ui_phone'])
 
             # Alert user of successful registration, and log them in.
