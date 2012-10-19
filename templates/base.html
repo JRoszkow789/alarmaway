@@ -2,40 +2,47 @@
 <html>
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
-  <title>{% block title %}Are You Up?{% endblock %}</title>
-  <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.css')}}" type="text/css" />
+  <title>
+    {% block title %}
+      AlarmAway -- Welcome to your simple morning
+    {% endblock %}
+  </title>
+  <link rel="stylesheet" type="text/css"
+       href="{{url_for('static', filename='css/bootstrap.css')}}" />
 </head>
 <body>
   <div class="container">
     <div class="row">
-      <div class="span6 offset2 t-left">
-        <ul class="unstyled">
-        {% for msg in get_flashed_messages() %}
-          <li>{{ msg }}</li>
-        {% endfor %}
-        </ul>
+      <div class="span4 offset8 t-center">
+        <a href="{{ url_for('login') }}">
+          Have An Account? <strong>Sign In</strong>
+        </a>
       </div>
-      {% if g.user %}
-      <div class="span3 offset1">
-        <div class="btn-group">
-          <a href="#" class="btn dropdown-toggle" data-toggle="dropdown">
-            Your Account <span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="{{ url_for('profile') }}">Profile</a>
-            <li><a href="{{ url_for('logout') }}">Logout</a>
-          </ul>
-        </div>
-      </div>
-      {% else %}
-      <div class="span4 t-center">
-        <a href="{{ url_for('login') }}">Have An Account? <strong>Sign In</strong></a>
-      </div>
-      {% endif %}
     </div>
+    {% if add_flash_msgs and add_header_msgs %}
+      <div class="row">
+        {% for msg in get_flashed_messages() %}
+          <div class="span8 offset2 alert">
+            {{ msg }}
+          </div>
+          {% endfor %}
+        </div>
+    {% endif %}
     {% block content %}{% endblock %}
+    {% if add_flash_msgs and not add_header_msgs %}
+      <div class="row">
+        {% for msg in get_flashed_messages() %}
+          <div class="span8 offset2 alert">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
   </div>
-  <script src="http://code.jquery.com/jquery-latest.js"></script>
-  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+  <script src="http://code.jquery.com/jquery-latest.js">
+  </script>
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}">
+  </script>
   {% block footer_addin %}{% endblock %}
 </body>
 </html>
