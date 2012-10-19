@@ -1,3 +1,4 @@
+set foreign_key_checks = 0;
 drop table if exists users;
 create table users (
 	user_id int unsigned not null auto_increment,
@@ -7,21 +8,19 @@ create table users (
 	user_role tinyint unsigned not null,
 	primary key (user_id)
 );
-drop table if exists user_properties;
-create table user_properties (
-	up_user int unsigned not null,
-	up_property varchar(63) not null,
-	up_value varchar(255) not null,
-	primary key (up_user, up_property)
+drop table if exists aa_things;
+create table aa_things (
+	thing_id int unsigned not null auto_increment,
+	thing_owner int unsigned not null,
+	thing_name varchar(64) not null,
+	thing_value varchar(1024) not null,
+	thing_created timestamp not null default current_timestamp,
+	primary key (thing_id, thing_owner, thing_name)
 );
-alter table user_properties
-add constraint fk_up_user
-foreign key (up_user) references users(user_id)
-on update cascade
-on delete cascade;
 drop table if exists alarms;
 create table alarms (
 	alarm_id int unsigned not null auto_increment,
+	alarm_thing int unsigned default null,
 	alarm_user int unsigned not null,
 	alarm_status tinyint unsigned not null,
 	alarm_created timestamp not null default current_timestamp,
@@ -31,6 +30,11 @@ create table alarms (
 alter table alarms
 add constraint fk_alarm_user
 foreign key (alarm_user) references users(user_id)
+on update cascade
+on delete cascade;
+alter table alarms
+add constraint fk_alarm_thing
+foreign key (alarm_thing) references aa_things(thing_id)
 on update cascade
 on delete cascade;
 drop table if exists alarm_call;
@@ -93,3 +97,4 @@ add constraint fk_jl_batch
 foreign key (jl_batch) references job_batch(batch_id)
 on update cascade
 on delete cascade;
+set foreign_key_checks = 1;
