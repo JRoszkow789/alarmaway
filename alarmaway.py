@@ -166,7 +166,7 @@ def check_phone_verification(verify_attempt):
         app.logger.debug('check_phone_verification:  NO uv_code in session')
         return False
     else:
-        # TODO is this an issue? What if verify fails stooooopiddd
+        # TODO  big issue, What if verify fails stooooopiddd
         # while we're at it, this should be secure!
         # maybe some type of hash of phone + code or something
         #
