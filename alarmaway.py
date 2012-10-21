@@ -64,22 +64,15 @@ def close_database(exception):
 
 def init_db(pw=None):
     """Creates the database tables. Added password for security."""
-    if pw is None:
-        app.logger.warn('init_db called with no password')
-        return "Must enter a password."
-    elif pw != app.config['INIT_DB_PW']:
-        app.logger.warn('init_db called with incorrect password')
-        return "Incorrect password. Database initialization failed."
+    if pw is None or pw != app.config['INIT_DB_PW']:
+        return False
     else:
-        app.logger.warn('init_db called with correct password')
         with app.app_context():
             db = get_db()
             with app.open_resource('schema.sql') as f:
                 db.cursor().executemany(f.read(), [])
-                app.logger.debug('init_db line successfully executed')
             db.commit()
-            app.logger.debug('init_db commit_db successful')
-
+        return True
 
 def query_db(query, args=(), one=False):
     cur = get_db().cursor()
@@ -88,18 +81,9 @@ def query_db(query, args=(), one=False):
     return rv
 
 
-def new_phone_verification():
-    """Generates a new (pseudo)random 7 digit number for passing to user
-    and verifying new phone numbers.
-    """
-    new_ver_code = random.randint(1000000, 9999999)
-    return new_ver_code
-
-
 def get_comm_client():
     top = _app_ctx_stack.top
     if not hasattr(top, 'comm_client'):
-        app.logger.debug('new comm_client connection')
         top.comm_client = AlarmAwayTwilioClient(
                 account=app.config['TWILIO_ACCOUNT_SID'],
                 token=app.config['TWILIO_AUTH_TOKEN'],
@@ -143,38 +127,39 @@ def create_new_user(email, pw_hash):
             'insert into aa_things (thing_owner, thing_name, thing_value)\
             values (%s, %s, %s)', (0, 'user', new_user_id))
     new_user_thing_id = cur.lastrowid
-    app.logger.debug(
-            'New user_thing created -- thing_id: %s' %
-            new_user_thing_id)
     if new_user_thing_id is None:
         return None
 
-    # Insert new user email thing
     cur.execute(
             'insert into aa_things (thing_owner, thing_name, thing_value)\
             values (%s, %s, %s)', (new_user_thing_id, 'email', email))
-    app.logger.debug(
-        'aa_thing created -- thing_id: %s, thing_name: %s' %
-        (cur.lastrowid, 'email'))
     db.commit()
-    app.logger.debug('create new user: db commit successful')
     return new_user_id
 
 
-def check_phone_verification(verify_attempt):
+def generate_phone_verification(num, secure=False):
+    """Generates a new (pseudo)random 7 digit number string used primarily
+    for passing to user and verifying new phone numbers. With the optional
+    'secure' argument set to True, returns a two-tuple of the verification
+    code string and a hash of the provided phone number + ver_code.
+    """
+    new_ver_code = str(random.randint(1000000, 9999999))
+    if not secure:
+        return new_ver_code
+    else:
+        ver_code_hash = generate_password_hash(new_ver_code + num)
+        return (new_ver_code, ver_code_hash)
+
+
+def check_phone_verification(input_attempt, num,):
     if 'uv_code' not in session:
-        app.logger.debug('check_phone_verification:  NO uv_code in session')
         return False
     else:
-        # TODO  big issue, What if verify fails stooooopiddd
-        # while we're at it, this should be secure!
-        # maybe some type of hash of phone + code or something
-        #
-        sesh_ver = session.pop('uv_code', None)
-        app.logger.debug(
-                'check_phone_verification -- sesh_ver: %s, attempt: %s' %
-                (sesh_ver, verify_attempt))
-        return int(verify_attempt) == int(sesh_ver)
+        if check_password_hash(input_attempt + num, session['uv_code']):
+            session.pop('uv_code')
+            return True
+        return False
+
 
 def add_verified_phone(owner, num):
     db = get_db()
@@ -187,14 +172,12 @@ def add_verified_phone(owner, num):
     cur.execute(
             'insert into aa_things (thing_owner, thing_name, thing_value)\
             values (%s, %s, %s)', (new_phone_id, 'verification', 1))
-    app.logger.debug('New phone verification successfully added')
     db.commit()
 
 
 def get_user(user_id):
     db = get_db()
     cur = db.cursor()
-    # Fetch user's thing
     user = query_db(
             'select thing_id from aa_things where\
             thing_name=%s and thing_value=%s',
@@ -212,14 +195,7 @@ def get_user_thing(user_id, id_only=False):
 
 
 def log_user_in(user_id):
-    if not 'user_id' in session:
-        app.logger.debug('log_user_in[pre] NO user id, NO current user')
-    elif 'user_id' in session and g.user:
-        app.logger.debug('log_user_in[pre] YES user_id, YES current user')
-        return
-    else:
-        app.logger.debug('log_user_in[pre] -- YES user_id, NO current user')
-
+    g.user = None
     g.user = get_user(user_id)
     session['user_id'] = g.user['thing_id']
 
@@ -252,7 +228,6 @@ def wakeup_call(phone):
         to=phone,
         from_=app.config['FROM_NUMBER'],
         url=app.config['CALL_URL'])
-    # ??????? return call.sid?????
 
 def wakeup_text(phone):
     """Place a request to the phone service to send a text message to
@@ -300,33 +275,21 @@ def pre_registration():
         elif input_phone is None:
             error = 'Please enter a valid phone number.'
         else:
-            # User input is valid given context, begin to process a
-            # registration. (Hence the name? eh?)
-            #
-            # the call to new_phone_verification generates a new
-            # verification code to be sent to verify the number.
-            uv_code = new_phone_verification()
-            session['uv_code'] = uv_code
+            uv_code, secure_uv_code = generate_phone_verification(
+                    input_phone, secure=True)
+            session['uv_code'] = secure_uv_code
 
-            # Here we grab our current voice/sms client, generate a message
-            # to be sent, and "send" the message by adding it to our current
-            # job queue. 
             client = get_comm_client()
             if not client.live:
                 pass
             msg = client.generate_sms_message(
                 msg_type=client.ver_msg, args=[uv_code])
-            # Good spot to implement that previously mentioned job queue!
             client.send_sms(
                 input_phone, msg=('Welcome to Alarm Away! Your\
                 verification code is %s. Verify your phone number and\
                 say hello to a New Good Morning.' % uv_code))
-
-            # Verification message handling out of the way, handle pre-reg
-            # To save some db writes, store current input data in session
             session['ui_alarm'] = input_alarm
             session['ui_phone'] = input_phone
-
             return redirect(url_for('registration'))
     return render_template('welcome.html', error=error)
 
@@ -342,78 +305,50 @@ def registration():
         # as an error and handle that with page state.
         # JUST DO SOMETHING!
         flash('Register for free in seconds!')
-        app.logger.warn('registration page -- no ui_phone in session.')
     error = None
     if request.method == 'POST':
-        # Do a quick basic check for blank fields to filter out some of the
-        # worst responses before needing to call any other functions.
         input_email = request.form['user_email']
         input_pw = request.form['user_pw']
         input_verification = request.form['user_ver_code']
         if not (input_email and input_pw and input_verification):
             error = 'Please complete all required fields.'
         else:
-            # Check verification code first for optimization reasons, it is
-            # stored in the session (for now at least), while validating the
-            # email address means a db read. More Speed + less db is worth
-            # two LOC being a bit out of the flow!
+            # Check user's verification code first to save time and db reads
             user_verification_valid = check_phone_verification(
-                    input_verification)
+                    session['ui_phone'], input_verification)
             if not user_verification_valid:
                 error = "Invalid verification code. Please try again."
-            # Now we can handle the lengthier email validation only where
-            # it is actually needed
             user_email = validate_email(input_email)
             user_pw_hash = generate_password_hash(input_pw)
             if not user_email:
                 error = "Invalid email entry, please check your entry."
             else:
-                # All input data is valid, now we can process the new reg
                 new_user_id = create_new_user(
                         email=input_email,
                         pw_hash=user_pw_hash)
             if not new_user_id:
-                app.logger.error(
-                        'user registration: all data valid, new_user_id\
-                        returned none.\nINFO\n------------------------\n\
-                        email: %s\nnew_user_id: %s' %
-                        (input_email, new_user_id))
                 flash(
                     'Sorry, something happened... We have been notified!')
                 return redirect(url_for('home'))
-
-            # Add the user's verified phone number to the database
             add_verified_phone(
                     owner=get_user_thing(new_user_id, id_only=True),
                     num=session['ui_phone'])
-
-            # Alert user of successful registration, and log them in.
             flash('Successfully registered')
             log_user_in(new_user_id)
             return redirect(url_for('login'))
-
-    return render_template('registration_stage_two.html', error=error)
+    return render_template('register.html', error=error)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    return '''
-
-        <h3>Login Page</h3>
-        <a href='/'>
-            Return to home
-        </a>
-
-        '''
+    if 'user_id' in session:
+        flash('You are already logged in!')
+        return redirect(url_for('home'))
+    return render_template('login.html')
 
 
 @app.route('/logout')
 def logout():
-    return '''
-
-        <h3>Logout Page</h3>
-        <a href='/'>
-            Return to home
-        </a>
-
-        '''
+    if 'user_id' in session:
+        session.pop('user_id', None)
+    return redirect(url_for('home'))

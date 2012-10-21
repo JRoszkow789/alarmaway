@@ -63,5 +63,4 @@ class AlarmAwayTwilioClient:
                 to=num,
                 from_=self.from_,
                 body=msg)
-        print sms_message
         return sms_message

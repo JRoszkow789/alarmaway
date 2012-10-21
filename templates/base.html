@@ -19,15 +19,13 @@
         </a>
       </div>
     </div>
-    {% if add_flash_msgs and add_header_msgs %}
-      <div class="row">
-        {% for msg in get_flashed_messages() %}
-          <div class="span8 offset2 alert">
-            {{ msg }}
-          </div>
-          {% endfor %}
+    <div class="row">
+      {% for msg in get_flashed_messages() %}
+        <div class="span8 offset2 alert">
+          {{ msg }}
         </div>
-    {% endif %}
+      {% endfor %}
+    </div>
     {% block content %}{% endblock %}
     {% if add_flash_msgs and not add_header_msgs %}
       <div class="row">
