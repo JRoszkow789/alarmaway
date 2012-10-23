@@ -257,6 +257,14 @@ def add_secs(tm, secs):
     return fulldate.time()
 
 
+def format_alarm_time(alarm_time):
+    return alarm_time.strftime('%I:%M %p')
+
+
+def format_phone_number(num):
+    return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
+
+
 #TODO Add redirects for recognized users
 @app.route('/')
 def home():
@@ -339,6 +347,17 @@ def registration():
     return render_template('register.html', error=error)
 
 
+@app.route('/account')
+def user_home():
+    if not 'user_id' in session:
+        flash('Must be logged in.')
+        return redirect(url_for('home'))
+    user_phone = session['ui_phone']
+    user_alarm = session['ui_alarm']
+    return render_template('user-account-main.html',
+            user_phone=user_phone, user_alarm=user_alarm)
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
@@ -352,3 +371,7 @@ def logout():
     if 'user_id' in session:
         session.pop('user_id', None)
     return redirect(url_for('home'))
+
+# Add some filters to jinja
+app.jinja_env.filters['alarm_format'] = format_alarm_time
+app.jinja_env.filters['phone_format'] = format_phone_number
