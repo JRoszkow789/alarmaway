@@ -64,3 +64,10 @@ class AlarmAwayTwilioClient:
                 from_=self.from_,
                 body=msg)
         return sms_message
+
+    def make_call(num, call_url):
+        call = self.client.calls.create(
+                to=num,
+                from_=self.from_,
+                url=call_url)
+        return call.sid

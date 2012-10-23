@@ -111,28 +111,14 @@ def validate_email(email):
 
 
 def create_new_user(email, pw_hash):
-    """Creates a new user and all the associated things. Returns the
-    newly created user's user_thing (id).
+    """Creates a new user and returns the newly created user's id.
     """
     db = get_db()
     cur = db.cursor()
-    cur.execute(
-            "insert into users (user_pw, user_status, user_role) values\
-            (%s, %s, %s)", (pw_hash, constants.NEW, constants.USER))
+    cur.execute('insert into users (user_email, user_pw,\
+            user_role, user_status) values (%s, %s, %s, %s)',
+            (email, pw_hash, constants.USER, constants.NEW))
     new_user_id = cur.lastrowid
-    app.logger.debug('New user created -- user_id: %s' % new_user_id)
-    if new_user_id is None:
-        return None
-    cur.execute(
-            'insert into aa_things (thing_owner, thing_name, thing_value)\
-            values (%s, %s, %s)', (0, 'user', new_user_id))
-    new_user_thing_id = cur.lastrowid
-    if new_user_thing_id is None:
-        return None
-
-    cur.execute(
-            'insert into aa_things (thing_owner, thing_name, thing_value)\
-            values (%s, %s, %s)', (new_user_thing_id, 'email', email))
     db.commit()
     return new_user_id
 
@@ -151,110 +137,45 @@ def generate_phone_verification(num, secure=False):
         return (new_ver_code, ver_code_hash)
 
 
-def check_phone_verification(input_attempt, num,):
+def check_phone_verification(input_attempt):
     if 'uv_code' not in session:
         return False
     else:
-        if check_password_hash(input_attempt + num, session['uv_code']):
+        if int(input_attempt) == int(session['uv_code']):
             session.pop('uv_code')
             return True
-        return False
+    return False
 
 
-def add_verified_phone(owner, num):
+def add_user_phone(owner, num, verified=False):
+    """Adds a new phone number to the database.
+    Properties of the new number include the id of the user who(m?) owns the
+    phone number, the number itself, and whether or not it has been verified
+    yet. Only verified numbers may be used with the AlarmAway service.
+    """
     db = get_db()
     cur = db.cursor()
-    cur.execute(
-            'insert into aa_things (thing_owner, thing_name, thing_value)\
-            values (%s, %s, %s)', (owner, 'phone', num))
+    cur.execute('insert into user_phones values (%s, %s, %s, %s, %s)',
+            (None, owner, num, verified, None))
     new_phone_id = cur.lastrowid
-    app.logger.debug('New phone record added: %s' % new_phone_id)
-    cur.execute(
-            'insert into aa_things (thing_owner, thing_name, thing_value)\
-            values (%s, %s, %s)', (new_phone_id, 'verification', 1))
-    db.commit()
+    if new_phone_id:
+        db.commit()
+        return new_phone_id
+    return None
 
 
 def get_user(user_id):
-    db = get_db()
-    cur = db.cursor()
-    user = query_db(
-            'select thing_id from aa_things where\
-            thing_name=%s and thing_value=%s',
-            ('user', user_id), one=True)
-    return None if not user else user
-
-
-def get_user_thing(user_id, id_only=False):
-    user_thing = query_db(
-            'select thing_id, thing_value from aa_things where\
-            thing_name=%s and thing_value=%s', ('user', user_id), one=True)
-    if id_only:
-        return user_thing['thing_id']
-    return user_thing
+    user = query_db('select user_id, user_email, user_role, user_status from\
+            users where user_id=%s', user_id, one=True)
+    return user if user else None
 
 
 def log_user_in(user_id):
     g.user = None
-    g.user = get_user(user_id)
-    session['user_id'] = g.user['thing_id']
-
-
-def set_user_alarm(user_phone, alarm_time):
-    sched.add_cron_job(
-        wakeup_call,
-        args=[user_phone],
-        day_of_week="*",
-        hour=alarm_time.hour,
-        minute=alarm_time.minute,
-        jobstore='ap_jobstore_db')
-
-    snooze_time = add_secs(alarm_time, 180)
-    sched.add_cron_job(
-        wakeup_text,
-        args=[user_phone],
-        day_of_week="*",
-        hour=snooze_time.hour,
-        minute=snooze_time.minute,
-        jobstore='ap_jobstore_db')
-
-def wakeup_call(phone):
-    """Place a request to the phone service to call the number provided
-    by the 'phone' parameter. The call's '_from' telephone number and
-    xml response url, 'url', are stored in the app's configuration file.
-    """
-    client = connect_phone()
-    call = client.calls.create(
-        to=phone,
-        from_=app.config['FROM_NUMBER'],
-        url=app.config['CALL_URL'])
-
-def wakeup_text(phone):
-    """Place a request to the phone service to send a text message to
-    the phone number provided by the 'phone' parameter. The message's
-    '_from' telephone number and message body, 'body', are stored in
-    the app's configuration file.
-    """
-    client = connect_phone()
-    message = client.sms.messages.create(
-        to=('+1%s' % phone),
-        from_=app.config['FROM_NUMBER'],
-        body=app.config['WAKEUP_MSG_BODY'])
-
-
-def convert_timedelta_to_time(tm):
-    """Hack to change a datetime.timedelta object to a datetime.time
-    object. Creates a 'dummy date' and adds the timedelta, then returns
-    the result's time component.
-    """
-    dummy_datetime = datetime.datetime.min + tm
-    return dummy_datetime.time()
-
-
-def add_secs(tm, secs):
-    fulldate = datetime.datetime(1, 1, 1, tm.hour, tm.minute, tm.second)
-    fulldate = fulldate + datetime.timedelta(0, secs)
-    return fulldate.time()
+    user = get_user(user_id)
+    if 'user_id' in user:
+        g.user = user
+        session['user_id'] = g.user['user_id']
 
 
 def format_alarm_time(alarm_time):
@@ -283,9 +204,8 @@ def pre_registration():
         elif input_phone is None:
             error = 'Please enter a valid phone number.'
         else:
-            uv_code, secure_uv_code = generate_phone_verification(
-                    input_phone, secure=True)
-            session['uv_code'] = secure_uv_code
+            uv_code = generate_phone_verification(input_phone)
+            session['uv_code'] = uv_code
 
             client = get_comm_client()
             if not client.live:
@@ -307,25 +227,20 @@ def registration():
     if not 'ui_phone' in session:
         # TODO
         # TRASH!!!!!
-        # Acceptable(BARELY) for dev/design/testing only.
-        # This needs to either redirect or provide an acceptable
-        # registration alternative for a user with no phone. Or register it
-        # as an error and handle that with page state.
-        # JUST DO SOMETHING!
         flash('Register for free in seconds!')
     error = None
     if request.method == 'POST':
         input_email = request.form['user_email']
         input_pw = request.form['user_pw']
         input_verification = request.form['user_ver_code']
+        user_verification_valid = check_phone_verification(input_verification)
         if not (input_email and input_pw and input_verification):
             error = 'Please complete all required fields.'
+        elif not user_verification_valid:
+            error = "Invalid verification code. Please try again."
         else:
-            # Check user's verification code first to save time and db reads
-            user_verification_valid = check_phone_verification(
-                    session['ui_phone'], input_verification)
-            if not user_verification_valid:
-                error = "Invalid verification code. Please try again."
+            # We checked verification code first to save time and db reads,
+            # now validate input.
             user_email = validate_email(input_email)
             user_pw_hash = generate_password_hash(input_pw)
             if not user_email:
@@ -334,16 +249,19 @@ def registration():
                 new_user_id = create_new_user(
                         email=input_email,
                         pw_hash=user_pw_hash)
-            if not new_user_id:
-                flash(
-                    'Sorry, something happened... We have been notified!')
-                return redirect(url_for('home'))
-            add_verified_phone(
-                    owner=get_user_thing(new_user_id, id_only=True),
-                    num=session['ui_phone'])
-            flash('Successfully registered')
-            log_user_in(new_user_id)
-            return redirect(url_for('login'))
+                if not new_user_id:
+                    flash('Oops, something went wrong. We have been notified!')
+                    return redirect(url_for('home'))
+                flash('Successfully registered')
+                user_phone_added = add_user_phone(
+                        new_user_id, session['ui_phone'], verified=True)
+                if not user_phone_added:
+                    flash("Problems with adding phone number. Not added at\
+                            this time, please try again.")
+                else:
+                    flash("New phone number successfully added!")
+                log_user_in(new_user_id)
+                return redirect(url_for('user_home'))
     return render_template('register.html', error=error)
 
 
@@ -363,7 +281,27 @@ def login():
     if 'user_id' in session:
         flash('You are already logged in!')
         return redirect(url_for('home'))
-    return render_template('login.html')
+    error = None
+    if request.method == 'POST':
+        if not request.form['email']:
+            error = 'Must enter an email address'
+        elif not request.form['password']:
+            error = 'Must enter a password'
+        else:
+            login_email = validate_email(request.form['email'])
+            login_pw = request.form['password']
+            user = query_db(
+                    'select user_id, user_pw from users where user_email=%s',
+                    login_email, one=True)
+            if user and check_password_hash(user['user_pw'], login_pw):
+                log_user_in(user['user_id'])
+                flash('Successfully logged in')
+                return redirect(url_for('user_home'))
+            elif user:
+                error = "Invalid password"
+            else:
+                error = "Invalid email address"
+    return render_template('login.html', error=error)
 
 
 @app.route('/logout')

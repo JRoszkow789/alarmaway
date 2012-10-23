@@ -14,9 +14,18 @@
   <div class="container">
     <div class="row">
       <div class="span4 offset8 t-center">
-        <a href="{{ url_for('login') }}">
-          Have An Account? <strong>Sign In</strong>
-        </a>
+        {% if g.user %}
+          <a href="{{ url_for('user_home') }}">
+            <strong>Your Account </strong>
+          </a>
+          <a href="{{ url_for('logout') }}"> 
+            <strong> Logout</strong>
+          </a>
+        {% else %}
+          <a href="{{ url_for('login') }}">
+            Have An Account? <strong>Sign In</strong>
+          </a>
+        {% endif %}
       </div>
     </div>
     <div class="row">
