@@ -23,9 +23,10 @@
         <h4>{{ user_phone|phone_format }}</h4>
         <a href="#">edit</a>
         <h4>Everything Correct?</h4>
-        <button class="btn btn-primary btn-large">
+        <a href="{{ url_for('new_alarm') }}"
+            class="btn btn-primary btn-large">
           Set Alarm!
-        </button>
+        </a>
       </div>
     </div>
   </div>

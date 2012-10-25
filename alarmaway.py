@@ -1,8 +1,6 @@
 from __future__ import with_statement
 from flask import Flask, render_template, g, request, flash, redirect,\
     url_for, session, _app_ctx_stack
-from twilio import twiml
-from twilio.rest import TwilioRestClient
 from aa_comm import AlarmAwayTwilioClient
 import MySQLdb
 import MySQLdb.cursors
@@ -11,21 +9,12 @@ import random
 import datetime
 import re
 from werkzeug import generate_password_hash, check_password_hash
-from apscheduler.scheduler import Scheduler
-from apscheduler.jobstores.sqlalchemy_store import SQLAlchemyJobStore
 from decorators import requires_login
 import constants
 
 
 app = Flask(__name__)
 app.config.from_object('config')
-
-
-sched = Scheduler()
-sched.add_jobstore(
-    SQLAlchemyJobStore(app.config['JOBSTORE_DB_URI']),
-    'ap_jobstore_db')
-sched.start()
 
 
 PHONE_RE = re.compile(
@@ -65,14 +54,12 @@ def close_database(exception):
 def init_db(pw=None):
     """Creates the database tables. Added password for security."""
     if pw is None or pw != app.config['INIT_DB_PW']:
-        return False
-    else:
-        with app.app_context():
-            db = get_db()
+        return 'init_db Failed: Never run.' 
+    with app.app_context():
+        with get_db() as db:
             with app.open_resource('schema.sql') as f:
-                db.cursor().executemany(f.read(), [])
-            db.commit()
-        return True
+                db.execute(f.read())
+    return 'DB initialized successfully.'
 
 def query_db(query, args=(), one=False):
     cur = get_db().cursor()
@@ -165,6 +152,19 @@ def add_user_phone(owner, num, verified=False):
     return None
 
 
+def get_phone_number(phone_id):
+    """Takes a given phone_id and returns the corresponding phone number.
+    """
+    ph = query_db(
+        'select phone_number from user_phones where phone_id=%s',
+        phone_id, one=True)
+    ph = ph['phone_number'] if ph else None
+    app.logger.debug(
+        'get_phone_number -- phone_id: %s, phone_number: %s' %
+        (phone_id, ph))
+    return ph
+
+
 def get_user(user_id):
     user = query_db('''select user_id, user_email, user_role, user_status
         from users where user_id=%s''', user_id, one=True)
@@ -177,6 +177,25 @@ def log_user_in(user_id):
     if 'user_id' in user:
         g.user = user
         session['user_id'] = g.user['user_id']
+
+
+def create_new_alarm(user_id, phone_id, alarm_time, active=False):
+    """Creates a new alarm with the given input and inserts it into the
+    database. Also returns the newly created alarm's id.
+    """
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        'insert into alarms (alarm_owner, alarm_phone, alarm_time,\
+         alarm_active) values (%s, %s, %s, %s)''', (user_id, phone_id,
+         alarm_time, active))
+    new_alarm_id = cur.lastrowid
+    db.commit()
+    app.logger.debug('''new alarm created --\nuser_id: %s\nphone_id: %s\n
+                        alarm_time: %s\nactive: %s\nnew_alarm_id: %s''' % (
+                        user_id, phone_id, alarm_time, active,
+                        new_alarm_id))
+    return new_alarm_id
 
 
 def format_alarm_time(alarm_time):
@@ -213,11 +232,10 @@ def pre_registration():
                 pass
             msg = client.generate_sms_message(
                 msg_type=client.ver_msg, args=[uv_code])
-            client.send_sms(input_phone, msg=('''Welcome to Alarm Away!
-                            Your verification code is %s. Verify your phone
-                            number and say hello to a New Good Morning.'''
-                            % uv_code))
-            session['ui_alarm'] = input_alarm
+            client.send_sms(input_phone, msg=
+                            'Welcome to Alarm Away! Verification code: %s' %
+                            uv_code)
+            session['user_alarm'] = input_alarm
             session['ui_phone'] = input_phone
             return redirect(url_for('registration'))
     return render_template('welcome.html', error=error)
@@ -262,6 +280,8 @@ def registration():
                     flash('''Problems with adding phone number. Not added
                           at this time, please try again.''')
                 else:
+                    session.pop('ui_phone', None)
+                    session['user_phone_id'] = user_phone_added
                     flash("New phone number successfully added!")
                 log_user_in(new_user_id)
                 return redirect(url_for('user_home'))
@@ -274,8 +294,8 @@ def user_home():
     if not 'user_id' in session:
         flash('Must be logged in.')
         return redirect(url_for('home'))
-    user_phone = session['ui_phone']
-    user_alarm = session['ui_alarm']
+    user_phone = get_phone_number(session.get('user_phone_id'))
+    user_alarm = session['user_alarm']
     return render_template('user-account-main.html',
                             user_phone=user_phone, user_alarm=user_alarm)
 
@@ -307,10 +327,27 @@ def update_alarm(alarm_id):
 
 @app.route('/alarms/new')
 def new_alarm():
+    """Creates and sets a new user alarm. For now gets information about
+    user and alarm from session, will more than likely be changed in the
+    near future.
+    """
+    if not ('user_id', 'user_phone_id', 'user_alarm' in session):
+        flash('Sorry, not enough information required to create alarm.')
+        return redirect(url_for('home'))
+    new_alarm_id = create_new_alarm(
+        user_id=session.get('user_id'),
+        phone_id=session.get('user_phone_id'),
+        alarm_time=session.get('user_alarm'),
+        active=True)
     return '''
     <h1>New Alarm Page</h1>
+    <h2>Newly created alarm id: %s</h2>
     <a href="/">Home</a>
-    '''
+    <br />%s<br />%s<br />%s
+    ''' % (new_alarm_id, session.get('user_id'),
+           format_phone_number(get_phone_number(session.get(
+           'user_phone_id'))), format_alarm_time(session.get(
+           'user_alarm')))
 
 
 @app.route('/alarms/<alarm_id>/set')
