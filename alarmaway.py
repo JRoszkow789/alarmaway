@@ -23,8 +23,8 @@ app.config.from_object('config')
 
 sched = Scheduler()
 sched.add_jobstore(
-        SQLAlchemyJobStore(app.config['JOBSTORE_DB_URI']),
-        'ap_jobstore_db')
+    SQLAlchemyJobStore(app.config['JOBSTORE_DB_URI']),
+    'ap_jobstore_db')
 sched.start()
 
 
@@ -85,24 +85,23 @@ def get_comm_client():
     top = _app_ctx_stack.top
     if not hasattr(top, 'comm_client'):
         top.comm_client = AlarmAwayTwilioClient(
-                account=app.config['TWILIO_ACCOUNT_SID'],
-                token=app.config['TWILIO_AUTH_TOKEN'],
-                comm_number=app.config['FROM_NUMBER'])
+            account=app.config['TWILIO_ACCOUNT_SID'],
+            token=app.config['TWILIO_AUTH_TOKEN'],
+            comm_number=app.config['FROM_NUMBER'])
     return top.comm_client
 
 
 def validate_alarm_time(alarm_time):
     hours, mins = alarm_time.split(':')
-    rv = (datetime.time(hour=int(hours),
-                        minute=int(mins)) if alarm_time is not None
-                                          else None)
-    return rv
+    if alarm_time:
+        return datetime.time(hour=int(hours), minute=int(mins))
+    return None
 
 
 def validate_phone_number(num):
     rv = PHONE_RE.search(num)
     return None if rv is None else (
-            rv.group(1) + rv.group(2) + rv.group(3))
+        rv.group(1) + rv.group(2) + rv.group(3))
 
 
 def validate_email(email):
@@ -115,9 +114,10 @@ def create_new_user(email, pw_hash):
     """
     db = get_db()
     cur = db.cursor()
-    cur.execute('insert into users (user_email, user_pw,\
-            user_role, user_status) values (%s, %s, %s, %s)',
-            (email, pw_hash, constants.USER, constants.NEW))
+    cur.execute(
+        '''insert into users (user_email, user_pw, user_role, user_status)
+        values (%s, %s, %s, %s)''', (email, pw_hash, constants.USER,
+        constants.NEW))
     new_user_id = cur.lastrowid
     db.commit()
     return new_user_id
@@ -129,6 +129,7 @@ def generate_phone_verification(num, secure=False):
     'secure' argument set to True, returns a two-tuple of the verification
     code string and a hash of the provided phone number + ver_code.
     """
+    #TODO Fix secure
     new_ver_code = str(random.randint(1000000, 9999999))
     if not secure:
         return new_ver_code
@@ -156,7 +157,7 @@ def add_user_phone(owner, num, verified=False):
     db = get_db()
     cur = db.cursor()
     cur.execute('insert into user_phones values (%s, %s, %s, %s, %s)',
-            (None, owner, num, verified, None))
+        (None, owner, num, verified, None))
     new_phone_id = cur.lastrowid
     if new_phone_id:
         db.commit()
@@ -165,8 +166,8 @@ def add_user_phone(owner, num, verified=False):
 
 
 def get_user(user_id):
-    user = query_db('select user_id, user_email, user_role, user_status from\
-            users where user_id=%s', user_id, one=True)
+    user = query_db('''select user_id, user_email, user_role, user_status
+        from users where user_id=%s''', user_id, one=True)
     return user if user else None
 
 
@@ -199,8 +200,8 @@ def pre_registration():
         input_alarm = validate_alarm_time(request.form['time'])
         input_phone = validate_phone_number(request.form['phone'])
         if input_alarm is None:
-            error = 'Sorry, there was a problem processing your alarm,\
-                please try again.'
+            error = '''Sorry, there was a problem processing your alarm,
+                please try again.'''
         elif input_phone is None:
             error = 'Please enter a valid phone number.'
         else:
@@ -212,10 +213,10 @@ def pre_registration():
                 pass
             msg = client.generate_sms_message(
                 msg_type=client.ver_msg, args=[uv_code])
-            client.send_sms(
-                input_phone, msg=('Welcome to Alarm Away! Your\
-                verification code is %s. Verify your phone number and\
-                say hello to a New Good Morning.' % uv_code))
+            client.send_sms(input_phone, msg=('''Welcome to Alarm Away!
+                            Your verification code is %s. Verify your phone
+                            number and say hello to a New Good Morning.'''
+                            % uv_code))
             session['ui_alarm'] = input_alarm
             session['ui_phone'] = input_phone
             return redirect(url_for('registration'))
@@ -233,7 +234,8 @@ def registration():
         input_email = request.form['user_email']
         input_pw = request.form['user_pw']
         input_verification = request.form['user_ver_code']
-        user_verification_valid = check_phone_verification(input_verification)
+        user_verification_valid = check_phone_verification(
+            input_verification)
         if not (input_email and input_pw and input_verification):
             error = 'Please complete all required fields.'
         elif not user_verification_valid:
@@ -246,18 +248,19 @@ def registration():
             if not user_email:
                 error = "Invalid email entry, please check your entry."
             else:
-                new_user_id = create_new_user(
-                        email=input_email,
-                        pw_hash=user_pw_hash)
+                new_user_id = create_new_user(email=input_email,
+                                              pw_hash=user_pw_hash)
                 if not new_user_id:
-                    flash('Oops, something went wrong. We have been notified!')
+                    flash("Oops, something went wrong. Sorry! We're on it!")
                     return redirect(url_for('home'))
                 flash('Successfully registered')
                 user_phone_added = add_user_phone(
-                        new_user_id, session['ui_phone'], verified=True)
+                    new_user_id,
+                    session['ui_phone'],
+                    verified=True)
                 if not user_phone_added:
-                    flash("Problems with adding phone number. Not added at\
-                            this time, please try again.")
+                    flash('''Problems with adding phone number. Not added
+                          at this time, please try again.''')
                 else:
                     flash("New phone number successfully added!")
                 log_user_in(new_user_id)
@@ -265,7 +268,8 @@ def registration():
     return render_template('register.html', error=error)
 
 
-@app.route('/account')
+@app.route('/user')
+@app.route('/user/view')
 def user_home():
     if not 'user_id' in session:
         flash('Must be logged in.')
@@ -273,7 +277,56 @@ def user_home():
     user_phone = session['ui_phone']
     user_alarm = session['ui_alarm']
     return render_template('user-account-main.html',
-            user_phone=user_phone, user_alarm=user_alarm)
+                            user_phone=user_phone, user_alarm=user_alarm)
+
+
+@app.route('/user/update')
+def user_update():
+    return '''
+    <h1>User Update Page</h1>
+    <a href="/">Home</a>
+    '''
+
+
+@app.route('/alarms')
+@app.route('/alarms/view')
+def view_alarms():
+    return '''
+    <h1>View Alarms Page</h1>
+    <a href="/">Home</a>
+    '''
+
+
+@app.route('/alarms/<alarm_id>')
+def update_alarm(alarm_id):
+    return '''
+    <h1>Update Alarm Page</h1>
+    <a href="/">Home</a>
+    '''
+
+
+@app.route('/alarms/new')
+def new_alarm():
+    return '''
+    <h1>New Alarm Page</h1>
+    <a href="/">Home</a>
+    '''
+
+
+@app.route('/alarms/<alarm_id>/set')
+def set_alarm():
+    return '''
+    <h1>Set User Alarm Page</h1>
+    <a href="/">Home</a>
+    '''
+
+
+@app.route('/alarms/<alarm_id>/unset')
+def unset_alarm():
+    return '''
+    <h1>Unset User Alarm Page</h1>
+    <a href="/">Home</a>
+    '''
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -290,9 +343,8 @@ def login():
         else:
             login_email = validate_email(request.form['email'])
             login_pw = request.form['password']
-            user = query_db(
-                    'select user_id, user_pw from users where user_email=%s',
-                    login_email, one=True)
+            user = query_db('''select user_id, user_pw from users where
+                               user_email=%s''', login_email, one=True)
             if user and check_password_hash(user['user_pw'], login_pw):
                 log_user_in(user['user_id'])
                 flash('Successfully logged in')
