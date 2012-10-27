@@ -11,6 +11,7 @@ import re
 from werkzeug import generate_password_hash, check_password_hash
 from decorators import requires_login
 import constants
+import tasks
 
 
 app = Flask(__name__)
@@ -54,7 +55,7 @@ def close_database(exception):
 def init_db(pw=None):
     """Creates the database tables. Added password for security."""
     if pw is None or pw != app.config['INIT_DB_PW']:
-        return 'init_db Failed: Never run.' 
+        return 'init_db Failed: Never run.'
     with app.app_context():
         with get_db() as db:
             with app.open_resource('schema.sql') as f:
@@ -300,31 +301,6 @@ def user_home():
                             user_phone=user_phone, user_alarm=user_alarm)
 
 
-@app.route('/user/update')
-def user_update():
-    return '''
-    <h1>User Update Page</h1>
-    <a href="/">Home</a>
-    '''
-
-
-@app.route('/alarms')
-@app.route('/alarms/view')
-def view_alarms():
-    return '''
-    <h1>View Alarms Page</h1>
-    <a href="/">Home</a>
-    '''
-
-
-@app.route('/alarms/<alarm_id>')
-def update_alarm(alarm_id):
-    return '''
-    <h1>Update Alarm Page</h1>
-    <a href="/">Home</a>
-    '''
-
-
 @app.route('/alarms/new')
 def new_alarm():
     """Creates and sets a new user alarm. For now gets information about
@@ -339,31 +315,41 @@ def new_alarm():
         phone_id=session.get('user_phone_id'),
         alarm_time=session.get('user_alarm'),
         active=True)
-    return '''
-    <h1>New Alarm Page</h1>
-    <h2>Newly created alarm id: %s</h2>
-    <a href="/">Home</a>
-    <br />%s<br />%s<br />%s
-    ''' % (new_alarm_id, session.get('user_id'),
-           format_phone_number(get_phone_number(session.get(
-           'user_phone_id'))), format_alarm_time(session.get(
-           'user_alarm')))
+    return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
 
 
 @app.route('/alarms/<alarm_id>/set')
-def set_alarm():
-    return '''
-    <h1>Set User Alarm Page</h1>
-    <a href="/">Home</a>
-    '''
+def set_alarm(alarm_id):
+    if query_db(
+            'select alarm_id from alarms where alarm_id=%s and\
+            alarm_active=%s', (alarm_id, 1), one=True):
+        app.logger.error('alarm_id %s is already active' % alarm_id)
+        flash('That alarm is already set!')
+    else:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
+                   (1, alarm_id))
+        db.commit()
+        flash('Alarm set!')
+    return redirect(url_for('view_alarms'))
 
 
 @app.route('/alarms/<alarm_id>/unset')
-def unset_alarm():
-    return '''
-    <h1>Unset User Alarm Page</h1>
-    <a href="/">Home</a>
-    '''
+def unset_alarm(alarm_id):
+    if not query_db(
+            'select alarm_id from alarms where alarm_id=%s and\
+            alarm_active=%s', (alarm_id, 1), one=True):
+        app.logger.error('Cant unset, No active alarm for alarm_id: %s' % alarm_id)
+        flash('That alarm is not on!')
+    else:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
+                   (0, alarm_id))
+        db.commit()
+        flash('That alarm has been turned off for now.')
+    return redirect(url_for('view_alarms'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -398,6 +384,36 @@ def logout():
     if 'user_id' in session:
         session.pop('user_id', None)
     return redirect(url_for('home'))
+
+
+@app.route('/user/update')
+def user_update():
+    return '''
+    <h1>User Update Page</h1>
+    <a href="/">Home</a>
+    '''
+
+
+@app.route('/alarms')
+@app.route('/alarms/view')
+def view_alarms():
+    if not 'user_id' in session:
+        flash('you must be logged in to access this page')
+        return redirect(url_for('login'))
+    alarms = query_db(
+        'select alarm_id, alarm_time, alarm_active from alarms where\
+        alarm_owner=%s', session['user_id'])
+    app.logger.debug('loaded %s alarms for user %s' %
+                    (len(alarms), session['user_id']))
+    return render_template('view_alarms.html', alarms=alarms)
+
+@app.route('/alarms/<alarm_id>')
+def update_alarm(alarm_id):
+    return '''
+    <h1>Update Alarm Page</h1>
+    <a href="/">Home</a>
+    '''
+
 
 # Add some filters to jinja
 app.jinja_env.filters['alarm_format'] = format_alarm_time

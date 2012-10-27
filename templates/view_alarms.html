@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="t-center">Your Alarms: </h1>
+<div class="row row-header-room">
+  <div class="span6 offset2 t-left">
+    {% if alarms %}
+      <ul class="unstyled">
+        {% for alarm in alarms %}
+          <li>Alarm {{ alarm.alarm_id }} -- {{ alarm.alarm_time }} -- status: {{ alarm.alarm_active }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <h3 class="centered">Come on man set some alarms!</h3>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

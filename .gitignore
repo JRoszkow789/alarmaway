@@ -1,3 +1,4 @@
+requirements.txt
 runserver.*
 config.*
 shell.*
@@ -5,3 +6,4 @@ shell.*
 *.*~
 */*.*c
 */*.*~
+logs/*
