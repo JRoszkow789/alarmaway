@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block pre_header %}
+<style type="text/css">
+  .add-alarm-field {
+    width: 240px;
+    margin: auto;
+    padding: 20px;
+    background: #FFF;
+    border: 3px solid #555;
+  }
+</style>
+{% endblock %}
+{% block hero_title %}Create New Alarm{% endblock %}
+{% block hero_subtitle %}
+  Now only YOU stand in the way of your good morning.
+{% endblock %}
+{% block content %}
+<div class="span5 t-center">
+  <h3>Add Alarm</h3>
+  <div class="add-alarm-field">
+    <form>
+      <h5>Set Time:</h5>
+      <input type="text" placeholder="e.g. 7:00 AM" />
+      <h5>Select Phone:</h5>
+      <select>
+        <option>Choose Phone...</option>
+        <option>(555)555-1234</option>
+        <option>(555)555-4321</option>
+      </select>
+      <span class="help-block"><a href="#">Add new phone &raquo;</a></span>
+      <button class="btn btn-primary">Set New Alarm</button>
+    </form>
+  </div>
+</div>
+<div class="span5 offset1">
+  <h3 class="t-center">Current Alarms:</h3>
+  <dl>
+    <dt>7:00 AM
+    <dd>
+      <ul class="unstyled">
+        <li>
+          Status: <span class="text-success"><strong>active</strong></span>
+        </li>
+        <li>Phone: (555)555-1234</li>
+        <li><a href="#">Update this Alarm &raquo;</a></li>
+      </ul>
+    <dt>8:15 AM
+    <dd>
+      <ul class="unstyled">
+        <li>
+          Status: <span class="text-error"><strong>inactive</strong></span>
+        </li>
+        <li>Phone: (555)555-1234</li>
+        <li><a href="#">Update this Alarm &raquo;</a></li>
+      </ul>
+  </dl>
+</div>
+{% endblock %}

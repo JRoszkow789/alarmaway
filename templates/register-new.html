@@ -1,38 +1,67 @@
 {% extends "base.html" %}
+{% block header_addin %}
+<style type="text/css">
+  .regform {
+    background: #FFF;
+  }
+</style>
+{% endblock %}
+{% block hero_title %}Make Waking Up Easier{% endblock %}
 {% block hero_subtitle %}
-  AlarmAway is a simple, revolutionary approach to waking up the morning, and
-  the first step in promoting a Happier and Healthier You. Check it out, and
-  improve your lifestyle today.
-{% endblock %} 
-{% block hero_extras %}
-  <button class="btn btn-warning btn-large">
-    <strong>Try It Free &raquo;</strong>
-  </button>
+    Let us manage the parts you hate, and finally treat yourself to a
+    Good Morning
 {% endblock %}
 {% block content %}
-<div class="row add-top-buffer">
-  <div class="span6">
-    <img src="http://placehold.it/460x400" alt="How AlarmAway Works" />
+<div class="row">
+  <div class="span5">
+    <h4 class="t-center">
+      Experience a revolutionary movement to simplify your morning
+    </h4>
+    <p class="lead">Waking up can be hard. Sometimes it's tossing and
+      turning, once in a while a hangover, or simply staying up too late,
+      but no matter the reason, on many mornings the alarm ringing is a
+      dreaded sound.
+    </p>
+    <h4 class="t-center">Not Anymore</h4>
+    <p class="lead">Already have an account?
+      <a href="{{ url_for('login') }}">Sign In Here</a>
+    </p>
   </div>
-  <div class="span5 offset1 t-center">
-    <h3>In just a few seconds, you could change the way you start your day</h3>
-    {% if error %}
-      <div class="alert alert-error t-left">
-        <h4>Woops, something happened</h4>
-        {{ error }}
-      </div>
-    {% endif %}
-    <form method="post" class="form-horizontal"
-          action="{{ url_for('pre_registration') }}">
-      <a id="signup" />
-      <div class="control-group">
-        <label class="control-label" for="time">
-          <strong>
-            Wake up time
-          </strong>
-        </label>
-        <div class="controls">
-          <select name="time" id="time">
+  <div class="span5 offset1 well regform t-left">
+    <h4 class="t-center">Create an account to manage your morning</h4>
+    <form action="{{ url_for('registration') }}" method="post">
+      <label>
+        <strong>Email Address</strong>
+      </label>
+      <input type="text" name="user_email"
+        placeholder="e.g. yourname@example.com" />
+      <span class="help-block">
+        Dont worry, your info is safe with us! Check out our
+        <a href="#">Privacy Policy</a>
+      </span>  
+      <label>
+        <strong>Password</strong>
+      </label>
+      <input type="password"
+        name="user_pw" placeholder="1234supersecretpassword!" />
+      <span class="help-block">
+        Choose a secure password and write it down somewhere safe!
+      </span>
+      <label>
+        <strong>Phone Number</strong>
+      </label>
+      <input type="tel" name="phone" placeholder="e.g. 555-555-5555" />
+      <span class="help-block">
+        We'll send you a verification code via text message (SMS)
+        <a href="#">How does this work?</a>
+      </span>
+      <h4 class="t-center">
+        Great! Set your first alarm or just checkout your account!
+      </h4>
+      <div class="row">
+        <div class="span2 t-center">
+          <h4>Your First Alarm</h4>
+          <select name="time" id="time" class="span2">
             <option value="00:00">12:00 AM</option>
             <option value="00:15">12:15 AM</option>
             <option value="00:30">12:30 AM</option>
@@ -153,22 +182,16 @@
             <option value="23:30">11:30 PM</option>
             <option value="23:45">11:45 PM</option>
           </select>
+          <button type="submit" id="create_alarm" name="create_alarm" 
+              class="btn btn-warning">
+            Create Alarm
+          </button>
         </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="phone">
-          <strong>Phone Number</strong>
-        </label>
-        <div class="controls">
-          <input type="text" id="phone" name="phone"
-                    placeholder="e.g. 555-555-5555" />
-        </div>
-      </div>
-      <div class="row add-top-buffer">
-        <div class="span3 offset1 t-center">
-          <button type="submit"
-                 class="btn btn-warning btn-large btn-block">
-            <strong>Get Started!</strong>
+        <div class="span2 offset1 t-center">
+          <h4>Set alarm later</h4>
+          <button type="submit" id="create_account" name="create_account"
+              class="btn btn-primary">
+            My Account &raquo;
           </button>
         </div>
       </div>

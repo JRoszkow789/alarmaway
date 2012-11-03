@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block hero_title %}Make Waking Up Easier{% endblock %}
+{% block hero_subtitle %}
+  Let us manage the parts you hate, and finally treat yourself to a
+  Good Morning
+{% endblock %}
+{% block content %}
+<div class="alert alert-info">
+  <h4>Verify Your Number For the Alarm -- Check Your Phone!</h4>
+  <p>AlarmAway can only use your verified phone number(s) for wake ups.
+    A verification code has been sent via text (SMS) message to the phone
+    number you provided on the previous page. Entering this code in the
+    form below will verify this number for use with your AlarmAway
+    account.
+  </p>
+</div>
+{% if error %}
+  <div class="span8 offset2 t-left alert alert-error">
+    <h4>Oops!</h4>
+    {{ error }}
+  </div>
+{% endif %}
+<h3 class="t-center">
+  Create an account to manage your morning
+</h3>
+<form action="{{ url_for('registration') }}" method="post"
+    class="span8 offset2 t-left signup-form">
+  <label>
+    <strong>Email Address</strong>
+  </label>
+  <input type="text" name="user_email"
+    placeholder="e.g. yourname@example.com" />
+  <span class="help-block">
+    Dont worry, your info is safe with us! Check out our
+    <a href="#">Privacy Policy</a>
+  </span>  
+  <label>
+    <strong>Password</strong></label>
+  <input type="password"
+    name="user_pw" placeholder="1234supersecretpassword!" />
+  <span class="help-block">
+    Choose a secure password, make sure to remember it and keep it secret!
+  </span>
+  <label>
+    <strong>Phone Number</strong>
+  </label>
+  <span class="input-large uneditable-input">{{ session.ui_phone }}</span>
+  <span class="help-block">
+    This is the number that we sent your verification code to.
+    <a href="#">Wrong number?</a>
+  </span>
+  <label>
+    <strong>Verification Code</strong>
+  </label>
+  <input type="text" name="user_ver_code" placeholder="e.g. 1234567" />
+  <span class="help-block">
+    Didn't receive it? Make sure you have the correct number above, or
+    <a href="#">get a new code</a>
+  </span>
+  <h4 class="t-center">
+    Done with the boring stuff! Checkout Your alarm below!
+  </h4>
+  <div class="t-center">
+  <button type="submit" class="btn btn-warning btn-large">
+    <strong>View your Alarm!</strong>
+  </button>
+  </div>
+</form>
+{% endblock %}

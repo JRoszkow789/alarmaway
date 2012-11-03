@@ -1,64 +1,96 @@
 {% extends "base.html" %}
+{% block header_addin %}
+<style type="text/css">
+  .alarm-container {
+    width: 100%;
+    margin: 30px auto 60px auto;
+    padding: 20px 30px 20px 30px;
+    background:url({{ url_for('static', filename='img/az_subtle.png') }});
+    border: 3px solid #F2F2F2;
+    -webkit-border-radius: 5px;
+       -moz-border-radius: 5px;
+            border-radius: 5px;
+    -webkit-box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
+       -moz-box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
+            box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
+  }
+  .alarm-cell {
+    width: 175px;
+    height: 150px;
+    margin: 10px;
+    padding: 15px;
+    background: #FFF;
+    text-align: center;
+    float: left;
+  }
+</style>
+{% endblock %}
 {% block content %}
-<h1 class="t-center">
-  Welcome to a Simpler Morning
-</h1>
-<div class="row">
-  <div class="span10 offset1">
-    <h1 class="t-center">
-      <small>
-        You have successfully setup your account, Welcome to Alarm Away, and
-        Welcome to a Good Morning!
-      </small>
-    </h1>
+<div class="page-header">
+  <h1>
+    Joey2714 <small>Alarm Away account</small>
+  </h1>
+</div>
+<h2 class="t-left">Your alarms:</h2>
+<div class="row alarm-container">
+  <div class="alarm-cell">
+    <p>
+      <strong>Status: </strong>
+      <span class="text-error">INACTIVE</span>
+    </p>
+    <p>
+      <strong>Time: </strong>7:00 AM
+    </p>
+    <p>
+      <strong>Phone: </strong>(813)765-4975
+    </p>
+    <a href="#" class="btn btn-primary btn-large">
+      <strong>Set Alarm &raquo;</strong>
+    </a>
+  </div>  
+  <div class="alarm-cell">
+    <p>
+      <strong>Status: </strong>
+      <span class="text-error">INACTIVE</span>
+    </p>
+    <p>
+      <strong>Time: </strong>7:00 AM
+    </p>
+    <p>
+      <strong>Phone: </strong>(813)765-4975
+    </p>
+    <a href="#" class="btn btn-primary btn-large">
+      <strong>Set Alarm &raquo;</strong>
+    </a>
+  </div>
+  <div class="alarm-cell">
+    <h1 class="t-center">+</h1>
+    <a href="#" class="btn btn-primary btn-large">
+      <strong>Add Alarm &raquo;</strong>
+    </a>
   </div>
 </div>
+<h2 class="t-left">Your Account: </h2>
 <div class="row">
-  <div class="span4 offset4 t-center">
-    <h3>Activate your Alarm: </h3>
-    <div class="row">
-      <div class="span4 well">
-        <h4>{{ user_alarm|alarm_format }}</h4>
-        <a href="#">edit</a>
-        <h4>{{ user_phone|phone_format }}</h4>
-        <a href="#">edit</a>
-        <h4>Everything Correct?</h4>
-        <a href="{{ url_for('new_alarm') }}"
-            class="btn btn-primary btn-large">
-          Set Alarm!
-        </a>
-      </div>
-    </div>
+  <div class="span5 offset1">
+    <dl>
+      <dt>Status
+      <dd>Free <a href="#" class="btn btn-warning">Upgrade Account</a>
+      <dt>Member Since
+      <dd>11/01/2012
+      <dt>Phones
+      <dd>(813)765-4975<br />
+      <span class="t-right"><a href="#">Add Phone &raquo;</a></span>
+    </dl>
   </div>
-</div>
-<h2 class="t-left">
-  Check out these things to do...
-</h2>
-<div class="row add-top-buffer">
-  <div class="span12">
-    <ul class="thumbnails">
-      <li class="span4 row-header-room">
-        <a href="#" class="thumbnail">
-          <h3 class="t-center">
-            View your alarms
-          </h3>
-        </a>
-      </li>
-      <li class="span4">
-        <a href="#" class="thumbnail">
-          <h3 class="t-center">
-            Upgrade Account
-          </h3>
-        </a>
-      </li>
-      <li class="span4 row-header-room">
-        <a href="#" class="thumbnail">
-          <h3 class="t-center">
-            Create Profile
-          </h3>
-        </a>
-      </li>
-    </ul>
+  <div class="span6 t-center">
+    <h4>
+      Upgrading to a premium Alarm Away account provides access to multiple
+      alarms, multiple phones, ultimate customization and much more!
+    </h4>
+    <a href="#" class="btn btn-warning btn-large">
+      <strong>Plans and Pricing &raquo;</strong>
+    </a>
   </div>
 </div>
 {% endblock %}
