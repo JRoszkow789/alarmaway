@@ -1,28 +1,69 @@
 {% extends "base.html" %}
+{% block header_addin %}
+<style type="text/css">
+  .login-container {
+    background:#FFF;
+    margin: 20px auto;
+  }
+  .login-lead {
+    font-size: 18px;
+    line-height: 27px;
+    margin-bottom: 20px;
+  }
+  .form-signin {
+    max-width: 300px;
+    padding: 19px 29px 29px;
+    margin: 70px auto 20px;
+  }
+  .form-signin .form-signin-heading,
+  .form-signin .checkbox {
+    margin-bottom: 10px;
+  }
+  .form-signin input[type="text"],
+  .form-signin input[type="password"] {
+    font-size: 16px;
+    height: auto;
+    margin-bottom: 15px;
+    padding: 7px 9px;
+  }
+</style>
+{% endblock %}
+{% block pre_header %}{% endblock %}
+{% block hero_title %}Welcome Back{% endblock %}
+{% block hero_subtitle %}Sign in to Alarm Away and manage your morning{% endblock %}
 {% block content %}
-<div class="row">
-  <div class="span6 offset3 t-left well">
-    <form action="{{ url_for('login') }}" method="post">
-      
-      <legend>Existing user sign in</legend>
-      
-      
-      <label>Email Address</label>
-      <input type="text" name="email"
-                  placeholder="e.g. you@example.com" />
-      
-      
-      <label>
-        Password
-      </label>
-      <input type="password" name="password" />
-      
-      
-      <button type="submit" class="btn">
-        login
-      </button>
-
-    </form>
-  </div>
+<div class="row well login-container">
+<div class="span5 t-center">
+  <p class="login-lead">As an Alarm Away user, you are part of a
+    revolutionary change in the way we handle waking up in the morning.
+    Alarm Away presents a unique, universally accessbile alarm and wake up
+    service that focuses on reliability and simplicity.
+  </p>
+  <h3>Waking Up is Hard</h3>
+  <h3>With Alarm Away, it doesnt have to be.</h3>
+  <h4>Dont Have An Account?</h4>
+  <p class="lead">Signing up for Alarm Away is
+    <br /><strong>Fast, Easy and Free.</strong>
+  </p>
+  <p>
+  <a href="#" class="btn btn-large btn-warning">
+    <strong>Sign Up Now &raquo;</a></strong>
+  </p>
+</div>
+<div class="span4 offset1 t-center">
+  <form class="form-signin" action="{{ url_for('login') }}" method="post">
+    <h3 class="form-signin-heading">Existing user sign in</h3>
+    <input type="text" class="input-block-level"
+      placeholder="Email address" />
+    <input type="password" class="input-block-level"
+      placeholder="Password" />
+    <label class="checkbox t-left">
+      <input type="checkbox" value="remember-me" /> Remember me
+    </label>
+    <button class="btn btn-large btn-primary" type="submit">
+      Sign in
+    </button>
+  </form>
+</div>
 </div>
 {% endblock %}

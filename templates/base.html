@@ -1,55 +1,134 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="content-type" content="text/html; charset=utf-8">
-  <title>
-    {% block title %}
-      AlarmAway -- Welcome to your simple morning
-    {% endblock %}
-  </title>
-  <link rel="stylesheet" type="text/css"
-       href="{{url_for('static', filename='css/bootstrap.css')}}" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>
+  {% block title %}AlarmAway -- Welcome to your simple morning{% endblock %}
+</title>
+<link rel="stylesheet" type="text/css"
+     href="{{url_for('static', filename='css/cerulean.css')}}" />
+{% block header_addin %}{% endblock %}
+<style type="text/css">
+  html, body {
+    height: 100%;
+  }
+  body {
+    background:url({{ url_for('static', filename='img/grey.png') }});
+  }
+  #wrap {
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    margin: 0 auto -50px;
+  }
+  #push,
+  #footer {
+    height: 50px;
+  }
+  #footer {
+    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
+  }
+  .alarm-hero {
+    border-bottom: 3px solid #555;
+    background:url({{ url_for('static', filename='img/nasty_fabric.png') }});
+    text-align: center;
+  }
+  .aa-nav {
+    margin-bottom: 0;
+    background:url({{ url_for('static', filename='img/grey.png') }});
+  }
+  .aa-nav-inner {
+    background: inherit;
+    max-width: 900px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: right;
+    border: None;
+  }
+  .aa-footer-nav {
+    margin: 0;
+    background:inherit);
+  }
+  .aa-footer-nav-inner {
+    background: inherit;
+    max-width: 900px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: right;
+    border: None;
+  }
+  .hero-content {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+</style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="row">
-      <div class="span4 offset8 t-center">
-        {% if g.user %}
-          <a href="{{ url_for('user_home') }}">
-            <strong>Your Account </strong>
-          </a>
-          <a href="{{ url_for('logout') }}"> 
-            <strong> Logout</strong>
-          </a>
-        {% else %}
-          <a href="{{ url_for('login') }}">
-            Have An Account? <strong>Sign In</strong>
-          </a>
-        {% endif %}
-      </div>
-    </div>
-    <div class="row">
-      {% for msg in get_flashed_messages() %}
-        <div class="span8 offset2 alert">
-          {{ msg }}
-        </div>
-      {% endfor %}
-    </div>
-    {% block content %}{% endblock %}
-    {% if add_flash_msgs and not add_header_msgs %}
-      <div class="row">
-        {% for msg in get_flashed_messages() %}
-          <div class="span8 offset2 alert">
-            {{ msg }}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
+<!-- Page and content wrapper for the fixed-to-bottom nav bar. -->
+<div id="wrap">
+<div class="navbar aa-nav">
+  <div class="navbar-inner aa-nav-inner">
+    <a class="btn btn-primary" href="{{ url_for('login') }}">Sign In</a>
+    <a class="btn btn-warning" href="{{ url_for('regnew') }}">Sign Up</a>
   </div>
-  <script src="http://code.jquery.com/jquery-latest.js">
-  </script>
-  <script src="{{ url_for('static', filename='js/bootstrap.js') }}">
-  </script>
-  {% block footer_addin %}{% endblock %}
+</div>
+  
+<!-- Main 'Hero Unit' header. Can be customized with block's 'hero_title' and
+     'hero_subtitle', respectively. Can also be extended beneath the titling
+     with block hero_extras.-->
+<div class="hero-unit alarm-hero">
+<div class="hero-content">
+  <h1>{% block hero_title %}Wake Up To A Good Morning{% endblock %}</h1>
+  <h4>
+    {% block hero_subtitle %}Alarm Away, The Waking Up Revolution{% endblock %}
+  </h4>
+  {% block hero_extras %}{% endblock %}
+</div>
+</div>
+<!-- End hero header area. -->
+
+<!-- Begin Main Content Area. -->
+<div class="container">
+  {% block content %}{% endblock %}
+  
+  <!-- Temporary flash message handling. -->
+  <div class="row">
+    {% for msg in get_flashed_messages() %}
+      <div class="span8 offset2 alert">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+<!-- End Main Content Area -->
+
+<!-- Manage page and placement for Footer Area. -->
+<div id="push"></div>
+</div>
+
+<!-- Begin Footer Navbar -->
+<div id="footer">
+  <div class="container">
+    <div class="navbar aa-footer-nav">
+      <div class="navbar-inner aa-footer-nav-inner">
+        <a href="{{ url_for('home') }}" class="brand">Alarm Away</a>
+        <ul class="nav">
+          <li class="active"><a href="{{ url_for('home') }}">Home</a></li>
+          <li><a href="{{ url_for('regnew') }}"><strong>Sign Up Now</strong></a></li>
+          <li><a href="#">How It Works</a></li>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">FAQ</a></li>
+          <li><a href="#">Help</a></li>
+          <li><a href="#">Contact Us</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

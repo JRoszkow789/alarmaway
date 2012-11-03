@@ -11,7 +11,6 @@ import re
 from werkzeug import generate_password_hash, check_password_hash
 from decorators import requires_login
 import constants
-import tasks
 
 
 app = Flask(__name__)
@@ -242,12 +241,28 @@ def pre_registration():
     return render_template('welcome.html', error=error)
 
 
+#TODO DELETE THIS IS FOR TESTING TEMPLATES ONLY
+@app.route('/regnew')
+def regnew():
+    return render_template('register-new.html')
+
+@app.route('/userpreview')
+def userpreview():
+    user_phone='5555551234'
+    user_alarm=validate_alarm_time('08:00')
+    return render_template('user-account-main.html',
+                            user_phone=user_phone, user_alarm=user_alarm)
+
+@app.route('/newalarmtest')
+def newalarmtest():
+    return render_template('add-edit-alarm.html')
+#TODO END TESTING
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def registration():
     if not 'ui_phone' in session:
-        # TODO
-        # TRASH!!!!!
-        flash('Register for free in seconds!')
+        return render_template('register-new.html')
     error = None
     if request.method == 'POST':
         input_email = request.form['user_email']
@@ -286,7 +301,7 @@ def registration():
                     flash("New phone number successfully added!")
                 log_user_in(new_user_id)
                 return redirect(url_for('user_home'))
-    return render_template('register.html', error=error)
+    return render_template('register-cont.html', error=error)
 
 
 @app.route('/user')
@@ -299,57 +314,6 @@ def user_home():
     user_alarm = session['user_alarm']
     return render_template('user-account-main.html',
                             user_phone=user_phone, user_alarm=user_alarm)
-
-
-@app.route('/alarms/new')
-def new_alarm():
-    """Creates and sets a new user alarm. For now gets information about
-    user and alarm from session, will more than likely be changed in the
-    near future.
-    """
-    if not ('user_id', 'user_phone_id', 'user_alarm' in session):
-        flash('Sorry, not enough information required to create alarm.')
-        return redirect(url_for('home'))
-    new_alarm_id = create_new_alarm(
-        user_id=session.get('user_id'),
-        phone_id=session.get('user_phone_id'),
-        alarm_time=session.get('user_alarm'),
-        active=True)
-    return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
-
-
-@app.route('/alarms/<alarm_id>/set')
-def set_alarm(alarm_id):
-    if query_db(
-            'select alarm_id from alarms where alarm_id=%s and\
-            alarm_active=%s', (alarm_id, 1), one=True):
-        app.logger.error('alarm_id %s is already active' % alarm_id)
-        flash('That alarm is already set!')
-    else:
-        db = get_db()
-        cur = db.cursor()
-        cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
-                   (1, alarm_id))
-        db.commit()
-        flash('Alarm set!')
-    return redirect(url_for('view_alarms'))
-
-
-@app.route('/alarms/<alarm_id>/unset')
-def unset_alarm(alarm_id):
-    if not query_db(
-            'select alarm_id from alarms where alarm_id=%s and\
-            alarm_active=%s', (alarm_id, 1), one=True):
-        app.logger.error('Cant unset, No active alarm for alarm_id: %s' % alarm_id)
-        flash('That alarm is not on!')
-    else:
-        db = get_db()
-        cur = db.cursor()
-        cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
-                   (0, alarm_id))
-        db.commit()
-        flash('That alarm has been turned off for now.')
-    return redirect(url_for('view_alarms'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -384,35 +348,6 @@ def logout():
     if 'user_id' in session:
         session.pop('user_id', None)
     return redirect(url_for('home'))
-
-
-@app.route('/user/update')
-def user_update():
-    return '''
-    <h1>User Update Page</h1>
-    <a href="/">Home</a>
-    '''
-
-
-@app.route('/alarms')
-@app.route('/alarms/view')
-def view_alarms():
-    if not 'user_id' in session:
-        flash('you must be logged in to access this page')
-        return redirect(url_for('login'))
-    alarms = query_db(
-        'select alarm_id, alarm_time, alarm_active from alarms where\
-        alarm_owner=%s', session['user_id'])
-    app.logger.debug('loaded %s alarms for user %s' %
-                    (len(alarms), session['user_id']))
-    return render_template('view_alarms.html', alarms=alarms)
-
-@app.route('/alarms/<alarm_id>')
-def update_alarm(alarm_id):
-    return '''
-    <h1>Update Alarm Page</h1>
-    <a href="/">Home</a>
-    '''
 
 
 # Add some filters to jinja
