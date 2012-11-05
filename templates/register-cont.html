@@ -5,14 +5,15 @@
   Good Morning
 {% endblock %}
 {% block content %}
-<div class="alert alert-info">
-  <h4>Verify Your Number For the Alarm -- Check Your Phone!</h4>
-  <p>AlarmAway can only use your verified phone number(s) for wake ups.
-    A verification code has been sent via text (SMS) message to the phone
-    number you provided on the previous page. Entering this code in the
-    form below will verify this number for use with your AlarmAway
-    account.
+<div class="row">
+
+<div id="ver-alert" class="alert alert-info span6 offset3">
+  <button type="button" class="close" data-dismiss="alert">x</button>
+  <h4>Have a verification code?</h4>
+  <p>Great, we'll get it from you on the next page once
+    you have created an account.
   </p>
+</div>
 </div>
 {% if error %}
   <div class="span8 offset2 t-left alert alert-error">
@@ -37,25 +38,17 @@
   <label>
     <strong>Password</strong></label>
   <input type="password"
-    name="user_pw" placeholder="1234supersecretpassword!" />
+    name="user_password" placeholder="1234supersecretpassword!" />
   <span class="help-block">
     Choose a secure password, make sure to remember it and keep it secret!
   </span>
   <label>
     <strong>Phone Number</strong>
   </label>
-  <span class="input-large uneditable-input">{{ session.ui_phone }}</span>
+  <span class="input-large uneditable-input">{{ session.user_phone }}</span>
   <span class="help-block">
     This is the number that we sent your verification code to.
     <a href="#">Wrong number?</a>
-  </span>
-  <label>
-    <strong>Verification Code</strong>
-  </label>
-  <input type="text" name="user_ver_code" placeholder="e.g. 1234567" />
-  <span class="help-block">
-    Didn't receive it? Make sure you have the correct number above, or
-    <a href="#">get a new code</a>
   </span>
   <h4 class="t-center">
     Done with the boring stuff! Checkout Your alarm below!

@@ -7,7 +7,7 @@
 </title>
 <link rel="stylesheet" type="text/css"
      href="{{url_for('static', filename='css/cerulean.css')}}" />
-{% block header_addin %}{% endblock %}
+{% block preheader %}{% endblock %}
 <style type="text/css">
   html, body {
     height: 100%;
@@ -65,6 +65,10 @@
     margin-right: auto;
     text-align: center;
   }
+  .flasher-row {
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
 </style>
 </head>
 
@@ -74,7 +78,7 @@
 <div class="navbar aa-nav">
   <div class="navbar-inner aa-nav-inner">
     <a class="btn btn-primary" href="{{ url_for('login') }}">Sign In</a>
-    <a class="btn btn-warning" href="{{ url_for('regnew') }}">Sign Up</a>
+    <a class="btn btn-warning" href="{{ url_for('registration') }}">Sign Up</a>
   </div>
 </div>
   
@@ -85,7 +89,7 @@
 <div class="hero-content">
   <h1>{% block hero_title %}Wake Up To A Good Morning{% endblock %}</h1>
   <h4>
-    {% block hero_subtitle %}Alarm Away, The Waking Up Revolution{% endblock %}
+    {% block hero_subtitle %}Alarm Away, Waking Up A Revolution{% endblock %}
   </h4>
   {% block hero_extras %}{% endblock %}
 </div>
@@ -97,7 +101,7 @@
   {% block content %}{% endblock %}
   
   <!-- Temporary flash message handling. -->
-  <div class="row">
+  <div class="row flasher-row">
     {% for msg in get_flashed_messages() %}
       <div class="span8 offset2 alert">
         {{ msg }}
@@ -119,7 +123,7 @@
         <a href="{{ url_for('home') }}" class="brand">Alarm Away</a>
         <ul class="nav">
           <li class="active"><a href="{{ url_for('home') }}">Home</a></li>
-          <li><a href="{{ url_for('regnew') }}"><strong>Sign Up Now</strong></a></li>
+          <li><a href="{{ url_for('registration') }}"><strong>Sign Up Now</strong></a></li>
           <li><a href="#">How It Works</a></li>
           <li><a href="#">About Us</a></li>
           <li><a href="#">FAQ</a></li>
@@ -130,5 +134,8 @@
     </div>
   </div>
 </div>
+<!-- Load JS last for page load speed benefits. -->
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 </body>
 </html>

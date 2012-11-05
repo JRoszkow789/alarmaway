@@ -1,4 +1,24 @@
 {% extends "base.html" %}
+{% block preheader %}
+<style type="text/css">
+.btn-custom {
+  background-color: hsl(36, 100%, 52%) !important;
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#ffb547", endColorstr="#ff9d0a");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#ffb547), to(#ff9d0a));
+  background-image: -moz-linear-gradient(top, #ffb547, #ff9d0a);
+  background-image: -ms-linear-gradient(top, #ffb547, #ff9d0a);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ffb547), color-stop(100%, #ff9d0a));
+  background-image: -webkit-linear-gradient(top, #ffb547, #ff9d0a);
+  background-image: -o-linear-gradient(top, #ffb547, #ff9d0a);
+  background-image: linear-gradient(#ffb547, #ff9d0a);
+  border-color: #ff9d0a #ff9d0a hsl(36, 100%, 49%);
+  color: #F5F5F5 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.19);
+  -webkit-font-smoothing: antialiased;
+}
+</style>
+{% endblock %}
 {% block hero_subtitle %}
   AlarmAway is a simple, revolutionary approach to waking up the morning, and
   the first step in promoting a Happier and Healthier You. Check it out, and

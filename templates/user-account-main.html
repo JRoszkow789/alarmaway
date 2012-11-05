@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block header_addin %}
+{% block preheader %}
 <style type="text/css">
   .alarm-container {
     width: 100%;
     margin: 30px auto 60px auto;
     padding: 20px 30px 20px 30px;
-    background:url({{ url_for('static', filename='img/az_subtle.png') }});
+    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
     border: 3px solid #F2F2F2;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
@@ -31,21 +31,39 @@
     Joey2714 <small>Alarm Away account</small>
   </h1>
 </div>
+<div class="row">
+<div class="alert alert-error span8 offset2 t-center">
+<button type="button" class="close" data-dismiss="alert">x</button>
+<h4>Verify Your Phone Number!</h4>
+<p>The Alarm Away service will only work with phone numbers that you have
+  verified ownership of. You should have already received an SMS message
+  containing a 7 digit verification code. Please enter this code below to
+  verify the number.
+</p>
+<form class="form-inline">
+  <input type="text" class="input-medium" placeholder="Verification Code" />
+  <button type="submit" class="btn">Verify Phone</button>
+</form>
+<p>Wrong Number? <a href="#">Change it here.</a> Or we can
+  <a href="#">Send a new verification code.</a>
+</p>
+</div>
+</div>
 <h2 class="t-left">Your alarms:</h2>
 <div class="row alarm-container">
   <div class="alarm-cell">
     <p>
       <strong>Status: </strong>
-      <span class="text-error">INACTIVE</span>
+      <span class="text-success"><strong>EXAMPLE</strong></span>
     </p>
     <p>
       <strong>Time: </strong>7:00 AM
     </p>
     <p>
-      <strong>Phone: </strong>(813)765-4975
+      <strong>Phone: </strong>(813)555-5555
     </p>
     <a href="#" class="btn btn-primary btn-large">
-      <strong>Set Alarm &raquo;</strong>
+      <strong>Make Your Own &raquo;</strong>
     </a>
   </div>  
   <div class="alarm-cell">
@@ -75,7 +93,7 @@
   <div class="span5 offset1">
     <dl>
       <dt>Status
-      <dd>Free <a href="#" class="btn btn-warning">Upgrade Account</a>
+      <dd>Free <a href="#">Upgrade Account</a>
       <dt>Member Since
       <dd>11/01/2012
       <dt>Phones
