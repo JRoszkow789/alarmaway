@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block hero_title %}Alarm Away Admin Page{% endblock %}
+{% block hero_subtitle %}View all data in the current application context.{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="span8 offset2 t-left">
+    <h3 class="t-center">Users</h3>
+    <ul>
+    {% for user in users %}
+      <li>
+        <strong>id: {{ user.user_id }}</strong> email: {{ user.user_email }}
+          role: {{ user.user_role }} status: {{ user.user_status }}
+      </li>
+    {% endfor %}
+    </ul>
+  </div>
+</div>
+<div class="row">
+  <div class="span8 offset2 t-left">
+    <h3 class="t-center">Phones</h3>
+    <ul>
+    {% for phone in phones %}
+      <li>
+        <strong>id: {{ phone.phone_id }}</strong> number: {{ phone.phone_number }}
+          owner: {{ phone.phone_owner }} verified: {{ phone.phone_verified }}
+      </li>
+    {% endfor %}
+    </ul>
+  </div>
+</div>
+<div class="row">
+  <div class="span8 offset2 t-left">
+    <h3 class="t-center">Alarms</h3>
+    <ul>
+    {% for alarm in alarms %}
+      <li>
+        <strong>id: {{ alarm.alarm_id }}</strong> owner: {{ alarm.alarm_owner }}
+          phone: {{ alarm.alarm_phone }} time: {{ alarm.alarm_time }}
+          status(active): {{ alarm.alarm_active }}
+      </li>
+    {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

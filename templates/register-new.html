@@ -8,6 +8,9 @@
   .regform h4 {
     color: #FFF;
   }
+  #orig {
+    color: #317EAC;
+  }
   .myblock {
     color: #F5F5F5;
   }
@@ -39,6 +42,12 @@
   </div>
   <div class="span5 offset1 well regform t-left">
     <h4 class="t-center">Create an account to manage your morning</h4>
+    {% if error %}
+    <div class="alert alert-error t-center">
+      <h4 id="orig">Oops...</h4>
+      <p>{{ error }}</p>
+    </div>
+    {% endif %}
     <form action="{{ url_for('registration') }}" method="post">
       <label>
         <strong>Email Address</strong>

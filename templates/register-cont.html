@@ -6,20 +6,21 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-
-<div id="ver-alert" class="alert alert-info span6 offset3">
-  <button type="button" class="close" data-dismiss="alert">x</button>
-  <h4>Have a verification code?</h4>
-  <p>Great, we'll get it from you on the next page once
-    you have created an account.
-  </p>
-</div>
+  <div id="ver-alert" class="alert alert-info span6 offset3">
+    <button type="button" class="close" data-dismiss="alert">x</button>
+    <h4>Have a verification code?</h4>
+    <p>Great, we'll get it from you on the next page once
+      you have created an account.
+    </p>
+  </div>
 </div>
 {% if error %}
+<div class="row">
   <div class="span8 offset2 t-left alert alert-error">
     <h4>Oops!</h4>
     {{ error }}
   </div>
+</div>
 {% endif %}
 <h3 class="t-center">
   Create an account to manage your morning
