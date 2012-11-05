@@ -77,6 +77,12 @@ def is_number_unique(num):
     return False if rv is not None else True
 
 
+def is_email_unique(email):
+    rv = query_db('select user_id from users where user_email=%s',
+        email, one=True)
+    return False if rv is not None else True
+
+
 def validate_email(email):
     rv = EMAIL_RE.search(email)
     return None if rv is None else rv.group()
@@ -119,7 +125,7 @@ def check_phone_verification(input_attempt):
     return False
 
 
-def add_user_phone(owner, num, verified=False):
+def create_new_phone(owner, num, verified=False):
     """Adds a new phone number to the database.
     Properties of the new number include the id of the user who(m?) owns the
     phone number, the number itself, and whether or not it has been verified
@@ -217,13 +223,46 @@ def pre_registration():
 
 @app.route('/register', methods=['GET', 'POST'])
 def registration():
-    if request.method != 'POST':
-        if not 'user_phone' in session:
-            return render_template('register-new.html')
-    elif str.lower(str(request.form['user_email'])) == str.lower(str('Joe@Canopyinnovation.com')):
-        session['user_id'] = 1
-        return redirect(url_for('user_home'))
-    return render_template('register-cont.html')
+    if 'user_id' in session:
+        flash('You are already logged in as a registered user!')
+        return redirect(url_for('home'))
+
+    error = None
+    user_phone = None
+    phone_prev_present = True if 'user_phone' in session else False
+
+    if request.method == 'POST':
+        if not phone_prev_present:
+            user_phone = validate_phone_number(request.form['user_phone'])
+            if not is_number_unique(user_phone):
+                return render_template(
+                    'register-new.html',
+                    error='That phone number is already associated with\
+                    an Alarm Away account.')
+        else:
+            user_phone = session.pop('user_phone')
+
+        user_email = validate_email(request.form['user_email'])
+        user_password = request.form['user_password']
+        if user_email and user_password and is_email_unique(user_email):
+            # All input data is sanitized and validated. Create user and phone
+            new_user_id = create_new_user(user_email,
+                generate_password_hash(user_password))
+            new_phone_id = create_new_phone(new_user_id, user_phone)
+            app.logger.debug('new user created -- id: %s, phone_id: %s' %
+                (new_user_id, new_phone_id))
+            session['user_id'] = new_user_id
+            return redirect(url_for('home'))
+        elif not user_email:
+            error = 'Please enter a valid email address.'
+        elif not user_password:
+            error = 'Please enter a valid password.'
+        elif not is_email_unique(user_email):
+            error = 'That email address is already registered with Alarm Away.'
+
+    target_template = (
+        'register-cont.html' if phone_prev_present else 'register-new.html')
+    return render_template(target_template, error=error)
 
 
 @app.route('/user')
@@ -274,6 +313,24 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('home'))
 
+
+@app.route('/checkit')
+def admin_panel():
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    elif session['user_id'] != 1:
+        flash('You do not have the proper credentials to view this page.')
+        return redirect(url_for('home'))
+
+    users = query_db('select * from users')
+    alarms = query_db('select * from alarms')
+    alarm_events = query_db('select * from alarm_events')
+    user_phones = query_db('select * from user_phones')
+    responses = query_db('select * from responses')
+
+    return render_template('admin.html', users=users, phones=user_phones,
+        alarms=alarms, alarm_events=alarm_events, responses=responses)
 
 # Add some filters to jinja
 app.jinja_env.filters['alarm_format'] = format_alarm_time
