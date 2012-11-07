@@ -142,17 +142,41 @@ def create_new_phone(owner, num, verified=False):
     return None
 
 
-def get_phone_number(phone_id):
-    """Takes a given phone_id and returns the corresponding phone number.
+def get_user_phones(user_id, verified=False):
+    """Returns a list of all user_phone objects currently in the program's
+    database, for which the phone's owner is the supplied user_id. The
+    second argument allows specification of whether to return all phone
+    records found, or only the verified ones.
     """
-    ph = query_db(
-        'select phone_number from user_phones where phone_id=%s',
-        phone_id, one=True)
-    ph = ph['phone_number'] if ph else None
-    app.logger.debug(
-        'get_phone_number -- phone_id: %s, phone_number: %s' %
-        (phone_id, ph))
+    ph = (query_db(
+            'select phone_id, phone_number from user_phones where\
+            phone_owner=%s and phone_verified=%s', (user_id, 1))
+        if verified else query_db(
+            'select phone_id, phone_number from user_phones where\
+            phone_owner=%s', user_id))
     return ph
+
+
+def get_phone_number(request_phone_id):
+    rv = query_db('select phone_number from user_phones where phone_id=%s',
+        request_phone_id, one=True)
+    if rv is not None:
+        return rv['phone_number']
+    return None
+
+
+def get_user_alarms(user_id):
+    rv = query_db(
+        'select alarm_id, alarm_phone, alarm_time, alarm_active from alarms\
+        where alarm_owner=%s', user_id)
+    for v in rv:
+        # TODO Fix this, probably will be best to do as a whole revamp to the
+        # timing system, either using timezone(s) or using Unix-style time.
+        # This time/timedelta/mysqldb crap is stupid as hell
+        timedelta_val = v['alarm_time']
+        v['alarm_time'] = (datetime.datetime.min + timedelta_val).time()
+    return rv
+
 
 
 def get_user(user_id):
@@ -182,6 +206,10 @@ def create_new_alarm(user_id, phone_id, alarm_time, active=False):
 
 def format_alarm_time(alarm_time):
     return alarm_time.strftime('%I:%M %p')
+
+
+def format_alarm_status(status):
+    return 'ACTIVE' if status else 'INACTIVE'
 
 
 def format_phone_number(num):
@@ -271,10 +299,20 @@ def user_home():
     if not 'user_id' in session:
         flash('Must be logged in.')
         return redirect(url_for('home'))
-    user_phone = session.get('user_phone')
-    user_alarm = session['user_alarm']
-    return render_template('user-account-main.html',
-                            user_phone=user_phone, user_alarm=user_alarm)
+    need_verify_phone=False
+    user_id = session['user_id']
+    if not get_user_phones(user_id, verified=True):
+        need_verify_phone=True
+    user_info = query_db('select user_email from users where user_id=%s',
+        user_id, one=True)
+    user_alarms=get_user_alarms(user_id)
+    for alarm in user_alarms:
+        alarm['phone_number'] = get_phone_number(alarm['alarm_phone'])
+    return render_template(
+        'user-account-main.html',
+        user_email=user_info['user_email'],
+        need_verify_phone=need_verify_phone,
+        user_alarm_list=user_alarms)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -296,7 +334,7 @@ def login():
             if user and check_password_hash(user['user_pw'], login_pw):
                 session['user_id'] = user['user_id']
                 flash('Successfully logged in')
-                return redirect(url_for('home'))
+                return redirect(url_for('user_home'))
             elif user:
                 error = "Invalid password"
             else:
@@ -332,6 +370,13 @@ def admin_panel():
     return render_template('admin.html', users=users, phones=user_phones,
         alarms=alarms, alarm_events=alarm_events, responses=responses)
 
+
+@app.route('/new')
+def new_alarm():
+    return render_template('add-new-alarm.html')
+
+
 # Add some filters to jinja
-app.jinja_env.filters['alarm_format'] = format_alarm_time
-app.jinja_env.filters['phone_format'] = format_phone_number
+app.jinja_env.filters['format_alarm_time'] = format_alarm_time
+app.jinja_env.filters['format_alarm_status'] = format_alarm_status
+app.jinja_env.filters['format_phone_number'] = format_phone_number

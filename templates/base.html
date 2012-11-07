@@ -75,49 +75,56 @@
 <body>
 <!-- Page and content wrapper for the fixed-to-bottom nav bar. -->
 <div id="wrap">
-<div class="navbar aa-nav">
-  <div class="navbar-inner aa-nav-inner">
-    <a class="btn btn-primary" href="{{ url_for('login') }}">Sign In</a>
-    <a class="btn btn-warning" href="{{ url_for('registration') }}">Sign Up</a>
+
+<!-- Top Meta-Nav bar -->
+  <div class="navbar aa-nav">
+    <div class="navbar-inner aa-nav-inner">
+      {% if session.user_id %}
+        <a class="btn btn-primary" href="{{ url_for('logout') }}">Logout</a>
+        <a class="btn btn-warning" href="{{ url_for('user_home') }}">Your Account</a>
+      {% else %}
+        <a class="btn btn-primary" href="{{ url_for('login') }}">Sign In</a>
+        <a class="btn btn-warning" href="{{ url_for('registration') }}">Sign Up</a>
+      {% endif %}
+    </div>
   </div>
-</div>
-  
+<!-- End Meta nav area -->  
+
 <!-- Main 'Hero Unit' header. Can be customized with block's 'hero_title' and
      'hero_subtitle', respectively. Can also be extended beneath the titling
      with block hero_extras.-->
-<div class="hero-unit alarm-hero">
-<div class="hero-content">
-  <h1>{% block hero_title %}Wake Up To A Good Morning{% endblock %}</h1>
-  <h4>
-    {% block hero_subtitle %}Alarm Away, Waking Up A Revolution{% endblock %}
-  </h4>
-  {% block hero_extras %}{% endblock %}
-</div>
-</div>
+  <div class="hero-unit alarm-hero">
+    <div class="hero-content">
+      <h1>{% block hero_title %}Wake Up To A Good Morning{% endblock %}</h1>
+      <h4>
+        {% block hero_subtitle %}Alarm Away, Waking Up A Revolution{% endblock %}
+      </h4>
+      {% block hero_extras %}{% endblock %}
+    </div>
+  </div>
 <!-- End hero header area. -->
 
 <!-- Begin Main Content Area. -->
-<div class="container">
-  {% block content %}{% endblock %}
+  <div class="container">
+    {% block content %}{% endblock %}
   
   <!-- Temporary flash message handling. -->
-  <div class="row flasher-row">
-    {% for msg in get_flashed_messages() %}
-      <div class="span8 offset2 alert">
-        {{ msg }}
-      </div>
-    {% endfor %}
+    <div class="row flasher-row">
+      {% for msg in get_flashed_messages() %}
+        <div class="span8 offset2 alert">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    </div>
   </div>
-</div>
 <!-- End Main Content Area -->
 
 <!-- Manage page and placement for Footer Area. -->
-<div id="push"></div>
+  <div id="push"></div>
 </div>
 
 <!-- Begin Footer Navbar -->
 <div id="footer">
-  <div class="container">
     <div class="navbar aa-footer-nav">
       <div class="navbar-inner aa-footer-nav-inner">
         <a href="{{ url_for('home') }}" class="brand">Alarm Away</a>
@@ -132,7 +139,6 @@
         </ul>
       </div>
     </div>
-  </div>
 </div>
 <!-- Load JS last for page load speed benefits. -->
 <script src="http://code.jquery.com/jquery-latest.js"></script>
