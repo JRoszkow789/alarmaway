@@ -18,8 +18,10 @@
 {% block hero_title %}Set An Alarm Away Alarm{% endblock %}
 {% block hero_subtitle %}and never set another alarm again{% endblock %}
 {% block content %}
-  <div class="set-alarm-container">
-    <form class="form-horizontal">
+<div class="row well well-large major-container">
+  <div class="set-alarm-container faded-insert">
+    <form class="form-horizontal" method="post"
+        action="{{ url_for('new_alarm') }}">
       <div class="control-group">
         <label class="control-label" for="time">
           <a href="#"><i class="icon-question-sign"></i></a> <strong>Alarm Time</strong>
@@ -155,8 +157,10 @@
         <div class="controls">
           <select name="phone" id="phone">
             <option>Select phone...</option>
-            <option>(555)555-5555</option>
-            <option>(555)555-5555</option>
+            {% for num in user_phones %}
+            <option value="{{ num.phone_id }}">
+              {{ num.phone_number|format_phone_number }}</option>
+            {% endfor %}
           </select>
         </div>
       </div>
@@ -169,4 +173,5 @@
       </div>
     </form>
   </div>
+</div>
 {% endblock %}

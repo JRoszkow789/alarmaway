@@ -1,22 +1,21 @@
 {% extends "base.html" %}
 {% block preheader %}
 <style type="text/css">
-.btn-custom {
-  background-color: hsl(36, 100%, 52%) !important;
-  background-repeat: repeat-x;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#ffb547", endColorstr="#ff9d0a");
-  background-image: -khtml-gradient(linear, left top, left bottom, from(#ffb547), to(#ff9d0a));
-  background-image: -moz-linear-gradient(top, #ffb547, #ff9d0a);
-  background-image: -ms-linear-gradient(top, #ffb547, #ff9d0a);
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ffb547), color-stop(100%, #ff9d0a));
-  background-image: -webkit-linear-gradient(top, #ffb547, #ff9d0a);
-  background-image: -o-linear-gradient(top, #ffb547, #ff9d0a);
-  background-image: linear-gradient(#ffb547, #ff9d0a);
-  border-color: #ff9d0a #ff9d0a hsl(36, 100%, 49%);
-  color: #F5F5F5 !important;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.19);
-  -webkit-font-smoothing: antialiased;
-}
+ .promo-container {
+   max-width: 774px; 
+   margin: 60px auto;
+   text-align: center;
+ }
+ .promo-header {
+   font-size: 48px;
+   text-align: center;
+ }
+ .promo-pod {
+   width: 220px;
+   padding: 19px;
+   margin: 0;
+   float: left;
+ }
 </style>
 {% endblock %}
 {% block hero_subtitle %}
@@ -30,169 +29,123 @@
   </button>
 {% endblock %}
 {% block content %}
-<div class="row add-top-buffer">
-  <div class="span6">
-    <img src="http://placehold.it/460x400" alt="How AlarmAway Works" />
+<div class="row well well-large major-container">
+  <div class="row zero-row">
+    <div class="span5">
+      <img src="http://placehold.it/360x300" alt="How AlarmAway Works" />
+    </div>
+    <div class="span6 t-center faded-insert">
+      <h3 class="header-dark">In just a few seconds, you could change the way you start your day</h3>
+      {% if error %}
+        <div class="alert alert-error t-left">
+          <h4>Woops, something happened</h4>
+          {{ error }}
+        </div>
+      {% endif %}
+      <form method="post" class="form-horizontal"
+            action="{{ url_for('pre_registration') }}">
+        <div class="control-group">
+          <label class="control-label" for="time">
+            <strong>
+              Wake up time
+            </strong>
+          </label>
+          <div class="controls">
+            <select name="time" id="time">
+              <option value="00:00">12:00 AM</option><option value="00:15">12:15 AM</option>
+              <option value="00:30">12:30 AM</option><option value="00:38">12:45 AM</option>
+              <option value="01:00">1:00 AM</option><option value="01:15">1:15 AM</option>
+              <option value="01:30">1:30 AM</option><option value="01:45">1:45 AM</option>
+              <option value="02:00">2:00 AM</option><option value="02:15">2:15 AM</option>
+              <option value="02:30">2:30 AM</option><option value="02:45">2:45 AM</option>
+              <option value="03:00">3:00 AM</option><option value="03:15">3:15 AM</option>
+              <option value="03:30">3:30 AM</option><option value="03:45">3:45 AM</option>
+              <option value="04:00">4:00 AM</option><option value="04:15">4:15 AM</option>
+              <option value="04:30">4:30 AM</option><option value="04:45">4:45 AM</option>
+              <option value="05:00">5:00 AM</option><option value="05:15">5:15 AM</option>
+              <option value="05:30">5:30 AM</option><option value="05:45">5:45 AM</option>
+              <option value="06:00">6:00 AM</option><option value="06:15">6:15 AM</option>
+              <option value="06:30">6:30 AM</option><option value="06:45">6:45 AM</option>
+              <option value="07:00" selected="selected">7:00 AM</option>
+              <option value="07:15">7:15 AM</option>
+              <option value="07:30">7:30 AM</option><option value="07:45">7:45 AM</option>
+              <option value="08:00">8:00 AM</option><option value="08:15">8:15 AM</option>
+              <option value="08:30">8:30 AM</option><option value="08:45">8:45 AM</option>
+              <option value="09:00">9:00 AM</option><option value="09:15">9:15 AM</option>
+              <option value="09:30">9:30 AM</option><option value="09:45">9:45 AM</option>
+              <option value="10:00">10:00 AM</option><option value="10:15">10:15 AM</option>
+              <option value="10:30">10:30 AM</option><option value="10:45">10:45 AM</option>
+              <option value="11:00">11:00 AM</option><option value="11:15">11:15 AM</option>
+              <option value="11:30">11:30 AM</option><option value="11:45">11:45 AM</option>
+              <option value="12:00">12:00 PM</option><option value="12:15">12:15 PM</option>
+              <option value="12:30">12:30 PM</option><option value="12:45">12:45 PM</option>
+              <option value="13:00">1:00 PM</option><option value="13:15">1:15 PM</option>
+              <option value="13:30">1:30 PM</option><option value="13:45">1:45 PM</option>
+              <option value="14:00">2:00 PM</option><option value="14:15">2:15 PM</option>
+              <option value="14:30">2:30 PM</option><option value="14:45">2:45 PM</option>
+              <option value="15:00">3:00 PM</option><option value="15:15">3:15 PM</option>
+              <option value="15:30">3:30 PM</option><option value="15:45">3:45 PM</option>
+              <option value="16:00">4:00 PM</option><option value="16:15">4:15 PM</option>
+              <option value="16:30">4:30 PM</option><option value="16:45">4:45 PM</option>
+              <option value="17:00">5:00 PM</option><option value="17:15">5:15 PM</option>
+              <option value="17:30">5:30 PM</option><option value="17:45">5:45 PM</option>
+              <option value="18:00">6:00 PM</option><option value="18:15">6:15 PM</option>
+              <option value="18:30">6:30 PM</option><option value="18:45">6:45 PM</option>
+              <option value="19:00">7:00 PM</option><option value="19:15">7:15 PM</option>
+              <option value="19:30">7:30 PM</option><option value="19:45">7:45 PM</option>
+              <option value="20:00">8:00 PM</option><option value="20:15">8:15 PM</option>
+              <option value="20:30">8:30 PM</option><option value="20:45">8:45 PM</option>
+              <option value="21:00">9:00 PM</option><option value="21:15">9:15 PM</option>
+              <option value="21:30">9:30 PM</option><option value="21:45">9:45 PM</option>
+              <option value="22:00">10:00 PM</option><option value="22:15">10:15 PM</option>
+              <option value="22:30">10:30 PM</option><option value="22:45">10:45 PM</option>
+              <option value="23:00">11:00 PM</option><option value="23:15">11:15 PM</option>
+              <option value="23:30">11:30 PM</option><option value="23:45">11:45 PM</option>
+            </select>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="phone">
+            <strong>Phone Number</strong>
+          </label>
+          <div class="controls">
+            <input type="text" id="phone" name="phone"
+                      placeholder="e.g. 555-555-5555" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="span4 offset1">
+            <button type="submit" class="btn btn-warning btn-large btn-block">
+              <strong>Get Started!</strong>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="span5 offset1 t-center">
-    <h3>In just a few seconds, you could change the way you start your day</h3>
-    {% if error %}
-      <div class="alert alert-error t-left">
-        <h4>Woops, something happened</h4>
-        {{ error }}
-      </div>
-    {% endif %}
-    <form method="post" class="form-horizontal"
-          action="{{ url_for('pre_registration') }}">
-      <a id="signup" />
-      <div class="control-group">
-        <label class="control-label" for="time">
-          <strong>
-            Wake up time
-          </strong>
-        </label>
-        <div class="controls">
-          <select name="time" id="time">
-            <option value="00:00">12:00 AM</option>
-            <option value="00:15">12:15 AM</option>
-            <option value="00:30">12:30 AM</option>
-            <option value="00:38">12:45 AM</option>
-            
-            <option value="01:00">1:00 AM</option>
-            <option value="01:15">1:15 AM</option>
-            <option value="01:30">1:30 AM</option>
-            <option value="01:45">1:45 AM</option>
-            
-            <option value="02:00">2:00 AM</option>
-            <option value="02:15">2:15 AM</option>
-            <option value="02:30">2:30 AM</option>
-            <option value="02:45">2:45 AM</option>
-            
-            <option value="03:00">3:00 AM</option>
-            <option value="03:15">3:15 AM</option>
-            <option value="03:30">3:30 AM</option>
-            <option value="03:45">3:45 AM</option>
-            
-            <option value="04:00">4:00 AM</option>
-            <option value="04:15">4:15 AM</option>
-            <option value="04:30">4:30 AM</option>
-            <option value="04:45">4:45 AM</option>
-            
-            <option value="05:00">5:00 AM</option>
-            <option value="05:15">5:15 AM</option>
-            <option value="05:30">5:30 AM</option>
-            <option value="05:45">5:45 AM</option>
-            
-            <option value="06:00">6:00 AM</option>
-            <option value="06:15">6:15 AM</option>
-            <option value="06:30">6:30 AM</option>
-            <option value="06:45">6:45 AM</option>
-           
-            <option value="07:00" selected="selected">7:00 AM</option>
-            <option value="07:15">7:15 AM</option>
-            <option value="07:30">7:30 AM</option>
-            <option value="07:45">7:45 AM</option>
-            
-            <option value="08:00">8:00 AM</option>
-            <option value="08:15">8:15 AM</option>
-            <option value="08:30">8:30 AM</option>
-            <option value="08:45">8:45 AM</option>
-            
-            <option value="09:00">9:00 AM</option>
-            <option value="09:15">9:15 AM</option>
-            <option value="09:30">9:30 AM</option>
-            <option value="09:45">9:45 AM</option>
-            
-            <option value="10:00">10:00 AM</option>
-            <option value="10:15">10:15 AM</option>
-            <option value="10:30">10:30 AM</option>
-            <option value="10:45">10:45 AM</option>
-          
-            <option value="11:00">11:00 AM</option>
-            <option value="11:15">11:15 AM</option>
-            <option value="11:30">11:30 AM</option>
-            <option value="11:45">11:45 AM</option>
-          
-            <option value="12:00">12:00 PM</option>
-            <option value="12:15">12:15 PM</option>
-            <option value="12:30">12:30 PM</option>
-            <option value="12:45">12:45 PM</option>
-        
-            <option value="13:00">1:00 PM</option>
-            <option value="13:15">1:15 PM</option>
-            <option value="13:30">1:30 PM</option>
-            <option value="13:45">1:45 PM</option>
-        
-            <option value="14:00">2:00 PM</option>
-            <option value="14:15">2:15 PM</option>
-            <option value="14:30">2:30 PM</option>
-            <option value="14:45">2:45 PM</option>
-        
-            <option value="15:00">3:00 PM</option>
-            <option value="15:15">3:15 PM</option>
-            <option value="15:30">3:30 PM</option>
-            <option value="15:45">3:45 PM</option>
-        
-            <option value="16:00">4:00 PM</option>
-            <option value="16:15">4:15 PM</option>
-            <option value="16:30">4:30 PM</option>
-            <option value="16:45">4:45 PM</option>
-        
-            <option value="17:00">5:00 PM</option>
-            <option value="17:15">5:15 PM</option>
-            <option value="17:30">5:30 PM</option>
-            <option value="17:45">5:45 PM</option>
-        
-            <option value="18:00">6:00 PM</option>
-            <option value="18:15">6:15 PM</option>
-            <option value="18:30">6:30 PM</option>
-            <option value="18:45">6:45 PM</option>
-        
-            <option value="19:00">7:00 PM</option>
-            <option value="19:15">7:15 PM</option>
-            <option value="19:30">7:30 PM</option>
-            <option value="19:45">7:45 PM</option>
-       
-            <option value="20:00">8:00 PM</option>
-            <option value="20:15">8:15 PM</option>
-            <option value="20:30">8:30 PM</option>
-            <option value="20:45">8:45 PM</option>
-        
-            <option value="21:00">9:00 PM</option>
-            <option value="21:15">9:15 PM</option>
-            <option value="21:30">9:30 PM</option>
-            <option value="21:45">9:45 PM</option>
-        
-            <option value="22:00">10:00 PM</option>
-            <option value="22:15">10:15 PM</option>
-            <option value="22:30">10:30 PM</option>
-            <option value="22:45">10:45 PM</option>
-        
-            <option value="23:00">11:00 PM</option>
-            <option value="23:15">11:15 PM</option>
-            <option value="23:30">11:30 PM</option>
-            <option value="23:45">11:45 PM</option>
-          </select>
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="phone">
-          <strong>Phone Number</strong>
-        </label>
-        <div class="controls">
-          <input type="text" id="phone" name="phone"
-                    placeholder="e.g. 555-555-5555" />
-        </div>
-      </div>
-      <div class="row add-top-buffer">
-        <div class="span3 offset1 t-center">
-          <button type="submit"
-                 class="btn btn-warning btn-large btn-block">
-            <strong>Get Started!</strong>
-          </button>
-        </div>
-      </div>
-    </form>
+  <div class="promo-container">
+    <h1 class="promo-header header-dark">Take Control Of Your Morning</h1>
+    <div class="promo-pod">
+      <h3>Consistency</h3>
+      <p>Paragraph text parag raph text pa ragraph te xt paragraph text p aragr
+        aphtextpa ragraph text pa text paragra t ext paragr aphte xti!</p>
+      <button type="button" class="btn btn-large btn-primary">
+        Learn More &raquo;</button>
+    </div>
+    <div class="promo-pod">
+      <h3>Keep It Simple</h3>
+      <p>Paragraph text paragraph text paragraph text paragraph text paragraph
+        text paragraph text paragraph text paragraph text paragraph text</p>
+      <button type="button" class="btn btn-large btn-primary">
+        Learn More &raquo;</button>
+    </div>
+    <div class="promo-pod">
+      <h3>Set And Forget</h3>
+      <p>Paragraph text paragraph text paragraph text paragraph text paragraph
+        text paragraph text paragraph text paragraph text paragraph text</p>
+      <button type="button" class="btn btn-large btn-primary">
+        Learn More &raquo;</button>
+    </div>
   </div>
 </div>
 {% endblock %}

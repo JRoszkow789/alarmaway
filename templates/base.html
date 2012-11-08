@@ -13,7 +13,7 @@
     height: 100%;
   }
   body {
-    background:url({{ url_for('static', filename='img/grey.png') }});
+    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
   }
   #wrap {
     min-height: 100%;
@@ -29,13 +29,12 @@
     background:url({{ url_for('static', filename='img/wild_oliva.png') }});
   }
   .alarm-hero {
-    border-bottom: 3px solid #555;
-    background:url({{ url_for('static', filename='img/nasty_fabric.png') }});
+    background:url({{ url_for('static', filename='img/grey.png') }});
     text-align: center;
   }
   .aa-nav {
     margin-bottom: 0;
-    background:url({{ url_for('static', filename='img/grey.png') }});
+    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
   }
   .aa-nav-inner {
     background: inherit;
@@ -69,6 +68,18 @@
     margin-top: 40px;
     margin-bottom: 40px;
   }
+  .major-container {
+    margin: 0 auto 60px auto;
+  }
+  .zero-row {
+    margin-left: 0;
+  }
+  .faded-insert {
+    background: #D9EDF7;
+  }
+  .header-dark {
+    color: #393939 !important;
+  }
 </style>
 </head>
 
@@ -95,7 +106,7 @@
      with block hero_extras.-->
   <div class="hero-unit alarm-hero">
     <div class="hero-content">
-      <h1>{% block hero_title %}Wake Up To A Good Morning{% endblock %}</h1>
+      <h1 class="header-dark">{% block hero_title %}Wake Up To A Good Morning{% endblock %}</h1>
       <h4>
         {% block hero_subtitle %}Alarm Away, Waking Up A Revolution{% endblock %}
       </h4>
