@@ -1,7 +1,6 @@
 from __future__ import with_statement
 from flask import Flask, render_template, g, request, flash, redirect,\
     url_for, session, _app_ctx_stack
-from aa_comm import AlarmAwayTwilioClient
 import MySQLdb
 import MySQLdb.cursors
 import logging
@@ -115,16 +114,6 @@ def process_phone_verification(phone_num, ver_code):
                      "WARNING -- NOT IMPLEMENTED")
 
 
-def check_phone_verification(input_attempt):
-    if 'uv_code' not in session:
-        return False
-    else:
-        if int(input_attempt) == int(session['uv_code']):
-            session.pop('uv_code')
-            return True
-    return False
-
-
 def create_new_phone(owner, num, verified=False):
     """Adds a new phone number to the database.
     Properties of the new number include the id of the user who(m?) owns the
@@ -178,13 +167,6 @@ def get_user_alarms(user_id):
     return rv
 
 
-
-def get_user(user_id):
-    user = query_db('''select user_id, user_email, user_role, user_status
-        from users where user_id=%s''', user_id, one=True)
-    return user if user else None
-
-
 def create_new_alarm(user_id, phone_id, alarm_time, active=False):
     """Creates a new alarm with the given input and inserts it into the
     database. Also returns the newly created alarm's id.
@@ -204,6 +186,48 @@ def create_new_alarm(user_id, phone_id, alarm_time, active=False):
     return new_alarm_id
 
 
+def set_user_alarm(user_id, alarm_id):
+    rv = query_db('select alarm_id, alarm_active from alarms where\
+        alarm_owner=%s and alarm_id=%s', [user_id, alarm_id], one=True)
+    if rv is not None:
+        if not rv['alarm_active']:
+            db = get_db()
+            cur = db.cursor()
+            cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
+                [1, rv['alarm_id']])
+            db.commit()
+            return True
+        else:
+            app.logger.debug(
+                'set_user_alarm: alarm %s already set' % rv['alarm_id'])
+            return False
+    app.logger.debug(
+        'set_user_alarm: alarm not found. -- alarm_id: %s, user_id: %s' %
+        (alarm_id, user_id))
+    return False
+
+
+def unset_user_alarm(user_id, alarm_id):
+    rv = query_db('select alarm_id, alarm_active from alarms where\
+        alarm_owner=%s and alarm_id=%s', [user_id, alarm_id], one=True)
+    if rv is not None:
+        if rv['alarm_active']:
+            db = get_db()
+            cur = db.cursor()
+            cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
+                [0, rv['alarm_id']])
+            db.commit()
+            return True
+        else:
+            app.logger.debug(
+                'unset_user_alarm: alarm %s not set' % rv['alarm_id'])
+            return False
+    app.logger.debug(
+        'unset_user_alarm: alarm not found. -- alarm_id: %s, user_id: %s' %
+        (alarm_id, user_id))
+    return False
+
+
 def format_alarm_time(alarm_time):
     return alarm_time.strftime('%I:%M %p')
 
@@ -216,7 +240,6 @@ def format_phone_number(num):
     return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
 
 
-#TODO Add redirects for recognized users
 @app.route('/')
 def home():
     return render_template('welcome.html')
@@ -371,9 +394,53 @@ def admin_panel():
         alarms=alarms, alarm_events=alarm_events, responses=responses)
 
 
-@app.route('/new')
+@app.route('/alarm/new', methods=['GET', 'POST'])
 def new_alarm():
-    return render_template('add-new-alarm.html')
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    error = None
+    user_id = session['user_id']
+    if request.method == 'POST':
+        input_alarm = validate_alarm_time(request.form['time'])
+        if input_alarm is None:
+            error = 'Sorry, there was a problem processing your alarm, try again.'
+        else:
+            new_alarm_id = create_new_alarm(
+                user_id, request.form['phone'], input_alarm, active=True)
+            app.logger.debug('successfull alarm creation -- alarm_id: %s',
+                new_alarm_id)
+            flash('Awesome! You set an alarm!')
+            return redirect(url_for('user_home'))
+    user_phones = get_user_phones(session['user_id'])
+    return render_template('add-new-alarm.html', error=error,
+        user_phones=user_phones)
+
+
+@app.route('/alarm/set/<alarm_id>')
+def set_alarm(alarm_id):
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    if not set_user_alarm(user_id, alarm_id):
+        flash('An error occured, please try again.')
+        app.logger.debug('set_user_alarm FAIL -- user: %s, alarm: %s' %
+            (user_id, alarm_id))
+    return redirect(url_for('user_home'))
+
+
+@app.route('/alarm/unset/<alarm_id>')
+def unset_alarm(alarm_id):
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    if not unset_user_alarm(user_id, alarm_id):
+        flash('An error occured, please try again.')
+        app.logger.debug('unset_user_alarm FAIL -- user: %s, alarm: %s' %
+            (user_id, alarm_id))
+    return redirect(url_for('user_home'))
 
 
 # Add some filters to jinja

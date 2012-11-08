@@ -1,21 +1,8 @@
 {% extends "base.html" %}
 {% block preheader %}
 <style type="text/css">
-  .regform {
-    background: #317EAC;
-    color: #333;
-  }
-  .regform h4 {
-    color: #FFF;
-  }
   #orig {
     color: #317EAC;
-  }
-  .myblock {
-    color: #F5F5F5;
-  }
-  .myblock a {
-    color: #0E065C;
   }
 </style>
 {% endblock %}
@@ -25,9 +12,9 @@
     Good Morning
 {% endblock %}
 {% block content %}
-<div class="row">
-  <div class="span5">
-    <h4 class="t-center">
+<div class="row well well-large major-container">
+  <div class="span5 t-center">
+    <h4> 
       Experience a revolutionary movement to simplify your morning
     </h4>
     <p class="lead">Waking up can be hard. Sometimes it's tossing and
@@ -35,13 +22,13 @@
       but no matter the reason, on many mornings the alarm ringing is a
       dreaded sound.
     </p>
-    <h4 class="t-center">Not Anymore</h4>
+    <h4>Not Anymore</h4>
     <p class="lead">Already have an account?
       <a href="{{ url_for('login') }}">Sign In Here</a>
     </p>
   </div>
-  <div class="span5 offset1 well regform t-left">
-    <h4 class="t-center">Create an account to manage your morning</h4>
+  <div class="span6 t-center faded-insert">
+    <h4 class="t-center header-dark">Create an account to manage your morning</h4>
     {% if error %}
     <div class="alert alert-error t-center">
       <h4 id="orig">Oops...</h4>
@@ -49,7 +36,7 @@
     </div>
     {% endif %}
     <form action="{{ url_for('registration') }}" method="post">
-      <label>
+      <label class="header-dark">
         <strong>Email Address</strong>
       </label>
       <input type="text" name="user_email"
@@ -58,24 +45,24 @@
         Dont worry, your info is safe with us! Check out our
         <a href="#">Privacy Policy</a>
       </span>  
-      <label>
+      <label class="header-dark">
         <strong>Password</strong>
       </label>
       <input type="password"
         name="user_password" placeholder="1234supersecretpassword!" />
-      <span class="help-block myblock">
+      <span class="help-block">
         Choose a secure password and write it down somewhere safe!
       </span>
-      <label>
+      <label class="header-dark">
         <strong>Phone Number</strong>
       </label>
       <input type="tel" name="user_phone" placeholder="e.g. 555-555-5555" />
-      <span class="help-block myblock">
+      <span class="help-block">
         We'll send you a verification code via text message (SMS)
-        <a href="#">How does this work?</a>
+        <br /><a href="#">How does this work?</a>
       </span>
-      <h4 class="t-center">
-        Continue to check out your account or set an alarm!
+      <h4 class="header-dark">
+        Now just set your alarm!
       </h4>
       <p class="t-center">
       <button type="submit" class="btn btn-warning btn-large">
