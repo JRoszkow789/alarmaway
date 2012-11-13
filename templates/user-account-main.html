@@ -44,8 +44,10 @@
         containing a 7 digit verification code. Please enter this code below to
         verify the number.
       </p>
-      <form class="form-inline">
-        <input type="text" class="input-medium" placeholder="Verification Code"/>
+      <form class="form-inline" method="POST"
+          action="{{ url_for('verify_phone') }}">
+        <input type="text" class="input-medium" name="ver_attempt"
+          placeholder="Verification Code"/>
         <button type="submit" class="btn">Verify Phone</button>
       </form>
       <p>Wrong Number? <a href="#">Change it here.</a> Or we can
@@ -79,9 +81,9 @@
           <p>
             <strong>Status: </strong>
             {% if alarm.alarm_active %}
-            <span class="text-success">
+            <span class="label label-success">
             {% else %}
-            <span class="text-error">
+            <span class="label label-important">
             {% endif %}
             <strong>{{ alarm.alarm_active|format_alarm_status }}</strong>
             </span>
@@ -108,7 +110,7 @@
         <div class="alarm-cell">
           <p>
             <strong>Status: </strong>
-            <span class="text-success"><strong>EXAMPLE</strong></span>
+            <span class="label label-success"><strong>EXAMPLE</strong></span>
           </p>
           <p>
             <strong>Time: </strong>7:00 AM
@@ -122,6 +124,9 @@
         </div>
       {% endfor %}
         <div class="alarm-cell">
+          <p class="t-center">
+            <span class="label label-inverse">Your Alarm Here</span>
+          </p>
           <h1 class="t-center">+</h1>
           <a href="{{ url_for('new_alarm') }}" class="btn btn-primary btn-large">
             <strong>Add Alarm &raquo;</strong>

@@ -6,6 +6,7 @@ import MySQLdb.cursors
 import logging
 import random
 import datetime
+import scheduler
 import re
 from werkzeug import generate_password_hash, check_password_hash
 from decorators import requires_login
@@ -14,6 +15,7 @@ import constants
 
 app = Flask(__name__)
 app.config.from_object('config')
+sched = scheduler.AlarmScheduler()
 
 
 PHONE_RE = re.compile(
@@ -64,6 +66,11 @@ def validate_alarm_time(alarm_time):
     return None
 
 
+def get_alarm_as_datetime(alarm_id):
+    #TODO
+    return datetime.datetime.utcnow()
+
+
 def validate_phone_number(num):
     rv = PHONE_RE.search(num)
     return None if rv is None else (
@@ -110,9 +117,8 @@ def generate_verification_code():
 
 
 def process_phone_verification(phone_num, ver_code):
-    app.logger.debug("function call: process_phone_verification\n" +
-                     "WARNING -- NOT IMPLEMENTED")
-
+    sched.send_message(
+        'Welcome to AlarmAway! Verification code: %s' % ver_code, phone_num)
 
 def create_new_phone(owner, num, verified=False):
     """Adds a new phone number to the database.
@@ -228,6 +234,19 @@ def unset_user_alarm(user_id, alarm_id):
     return False
 
 
+def create_alarm_event(alarm_id):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        'insert into alarm_events (event_owner, event_status) values (%s, %s)',
+        (alarm_id, 0))
+    new_event_id = cur.lastrowid
+    db.commit()
+    if not new_event_id:
+        return None
+    return new_event_id
+
+
 def format_alarm_time(alarm_time):
     return alarm_time.strftime('%I:%M %p')
 
@@ -290,6 +309,11 @@ def registration():
                     'register-new.html',
                     error='That phone number is already associated with\
                     an Alarm Away account.')
+            else:
+                uv_code = generate_verification_code()
+                process_phone_verification(user_phone, uv_code)
+                session['uv_code'] = uv_code
+
         else:
             user_phone = session.pop('user_phone')
 
@@ -303,7 +327,7 @@ def registration():
             app.logger.debug('new user created -- id: %s, phone_id: %s' %
                 (new_user_id, new_phone_id))
             session['user_id'] = new_user_id
-            return redirect(url_for('home'))
+            return redirect(url_for('user_home'))
         elif not user_email:
             error = 'Please enter a valid email address.'
         elif not user_password:
@@ -407,11 +431,11 @@ def new_alarm():
             error = 'Sorry, there was a problem processing your alarm, try again.'
         else:
             new_alarm_id = create_new_alarm(
-                user_id, request.form['phone'], input_alarm, active=True)
+                user_id, request.form['phone'], input_alarm, active=False)
             app.logger.debug('successfull alarm creation -- alarm_id: %s',
                 new_alarm_id)
             flash('Awesome! You set an alarm!')
-            return redirect(url_for('user_home'))
+            return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
     user_phones = get_user_phones(session['user_id'])
     return render_template('add-new-alarm.html', error=error,
         user_phones=user_phones)
@@ -427,6 +451,19 @@ def set_alarm(alarm_id):
         flash('An error occured, please try again.')
         app.logger.debug('set_user_alarm FAIL -- user: %s, alarm: %s' %
             (user_id, alarm_id))
+    else:
+        new_event_id = create_alarm_event(alarm_id)
+        alarm_phone_id = query_db(
+            'select alarm_phone from alarms where alarm_id=%s',
+            alarm_id, one=True)
+        alarm_phone_number = query_db(
+            'select phone_number from user_phones where phone_id=%s',
+            alarm_phone_id['alarm_phone'], one=True)
+        sched.set_alarm(
+            new_event_id,
+            get_alarm_as_datetime(alarm_id),
+            alarm_phone_number['phone_number'])
+        flash('Alarm Set!')
     return redirect(url_for('user_home'))
 
 
@@ -440,6 +477,34 @@ def unset_alarm(alarm_id):
         flash('An error occured, please try again.')
         app.logger.debug('unset_user_alarm FAIL -- user: %s, alarm: %s' %
             (user_id, alarm_id))
+    else:
+        alarm_event = query_db("""
+            select event_id, event_start from alarm_events
+            where event_owner=%s order by event_start desc
+            """, alarm_id, one=True)
+        sched.unset_alarm(alarm_event['event_id'], terminate=True)
+        flash('alarm canceled')
+    return redirect(url_for('user_home'))
+
+
+@app.route('/verify-phone', methods=['POST'])
+def verify_phone():
+    user_id = session['user_id']
+    ver_attempt = request.form['ver_attempt']
+    if ver_attempt != session['uv_code']:
+        flash('Invalid verification code')
+    else:
+        db = get_db()
+        cur = db.cursor()
+        if cur.execute("""
+                update user_phones set phone_verified=%s where phone_owner=%s
+                """, [1, user_id]):
+            app.logger.debug('phone_verified for user %s' % user_id)
+            db.commit()
+            flash('Phone verified!')
+            session.pop('uv_code', None)
+        else:
+            flash('Sorry, an error occured, please try again')
     return redirect(url_for('user_home'))
 
 
