@@ -65,7 +65,7 @@ class AlarmAwayTwilioClient:
                 body=msg)
         return sms_message
 
-    def make_call(num, call_url):
+    def make_call(self, num, call_url):
         call = self.client.calls.create(
                 to=num,
                 from_=self.from_,
