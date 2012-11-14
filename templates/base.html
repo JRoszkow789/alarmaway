@@ -87,9 +87,11 @@
 <!-- Page and content wrapper for the fixed-to-bottom nav bar. -->
 <div id="wrap">
 
-<!-- Top Meta-Nav bar -->
+<!-- Top Meta-Nav bar. Can be overridden if necessary with block meta_nav. -->
+{% block meta_nav %}
   <div class="navbar aa-nav">
     <div class="navbar-inner aa-nav-inner">
+    {% block meta_nav_content %}
       {% if session.user_id %}
         <a class="btn btn-primary" href="{{ url_for('logout') }}">Logout</a>
         <a class="btn btn-warning" href="{{ url_for('user_home') }}">Your Account</a>
@@ -97,8 +99,10 @@
         <a class="btn btn-primary" href="{{ url_for('login') }}">Sign In</a>
         <a class="btn btn-warning" href="{{ url_for('registration') }}">Sign Up</a>
       {% endif %}
+    {% endblock %}
     </div>
   </div>
+{% endblock %}
 <!-- End Meta nav area -->  
 
 <!-- Main 'Hero Unit' header. Can be customized with block's 'hero_title' and
