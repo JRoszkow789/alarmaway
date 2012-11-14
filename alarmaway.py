@@ -66,8 +66,11 @@ def validate_alarm_time(alarm_time):
     return None
 
 
-def get_alarm_as_datetime(alarm_id):
-    #TODO
+def convert_for_scheduler(time=None):
+    #TODO idea was to be robust, time, date_time, etc...
+    # time is a time_delta, which is what currently gets returned by mysql
+    #
+    ####### TEMP #######
     return datetime.datetime.utcnow()
 
 
@@ -160,10 +163,17 @@ def get_phone_number(request_phone_id):
     return None
 
 
-def get_user_alarms(user_id):
-    rv = query_db(
-        'select alarm_id, alarm_phone, alarm_time, alarm_active from alarms\
-        where alarm_owner=%s', user_id)
+def get_user_alarms(user_id, active_only=True):
+    if active_only:
+        rv = query_db("""
+            select alarm_id, alarm_phone, alarm_time, alarm_active from alarms
+            where alarm_owner=%s and alarm_active=%s
+            """, (user_id, 1))
+    else:
+        rv = query_db("""
+            select alarm_id, alarm_phone, alarm_time, alarm_active from alarms
+            where alarm_owner=%s
+            """, user_id)
     for v in rv:
         # TODO Fix this, probably will be best to do as a whole revamp to the
         # timing system, either using timezone(s) or using Unix-style time.
@@ -171,6 +181,29 @@ def get_user_alarms(user_id):
         timedelta_val = v['alarm_time']
         v['alarm_time'] = (datetime.datetime.min + timedelta_val).time()
     return rv
+
+
+def get_scheduled_alarms(user_id):
+    user_alarm_ids = query_db(
+        'select alarm_id from alarms where alarm_owner=%s and alarm_active=%s',
+        (user_id, 1))
+    user_alarm_ids = [alarm['alarm_id'] for alarm in user_alarm_ids]
+    user_alarm_event_owners = query_db("""
+        select event_owner from alarm_events
+        where event_status=%s and event_owner in %s
+        """, (1, user_alarm_ids))
+    user_alarm_event_owners = [str(owner['event_owner']) for owner in user_alarm_event_owners]
+    rv = query_db("""
+        select alarm_id, alarm_phone, alarm_time, alarm_active from alarms
+        where alarm_id in %s
+        """, (user_alarm_event_owners))
+    for v in rv:
+        # TODO Fix this, as above. (since copied from above!)
+        timedelta_val = v['alarm_time']
+        v['alarm_time'] = (datetime.datetime.min + timedelta_val).time()
+    return rv
+
+
 
 
 def create_new_alarm(user_id, phone_id, alarm_time, active=False):
@@ -192,58 +225,119 @@ def create_new_alarm(user_id, phone_id, alarm_time, active=False):
     return new_alarm_id
 
 
-def set_user_alarm(user_id, alarm_id):
-    rv = query_db('select alarm_id, alarm_active from alarms where\
-        alarm_owner=%s and alarm_id=%s', [user_id, alarm_id], one=True)
-    if rv is not None:
-        if not rv['alarm_active']:
-            db = get_db()
-            cur = db.cursor()
-            cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
-                [1, rv['alarm_id']])
-            db.commit()
-            return True
-        else:
-            app.logger.debug(
-                'set_user_alarm: alarm %s already set' % rv['alarm_id'])
-            return False
-    app.logger.debug(
-        'set_user_alarm: alarm not found. -- alarm_id: %s, user_id: %s' %
-        (alarm_id, user_id))
+def remove_user_alarm(alarm_id):
+    # Return True/False indicating success or lack of
+    # Note - Alarm_ids come in already verified vs their user
+    db = get_db()
+    cur = db.cursor()
+    if cur.execute(
+            'update alarms set alarm_active=%s where alarm_id=%s',
+            (0, alarm_id)):
+        db.commit()
+        return True
     return False
 
 
-def unset_user_alarm(user_id, alarm_id):
-    rv = query_db('select alarm_id, alarm_active from alarms where\
-        alarm_owner=%s and alarm_id=%s', [user_id, alarm_id], one=True)
-    if rv is not None:
-        if rv['alarm_active']:
-            db = get_db()
-            cur = db.cursor()
-            cur.execute('update alarms set alarm_active=%s where alarm_id=%s',
-                [0, rv['alarm_id']])
-            db.commit()
-            return True
-        else:
-            app.logger.debug(
-                'unset_user_alarm: alarm %s not set' % rv['alarm_id'])
-            return False
-    app.logger.debug(
-        'unset_user_alarm: alarm not found. -- alarm_id: %s, user_id: %s' %
-        (alarm_id, user_id))
+def verify_alarm_ownership(user_id, alarm_id):
+    # Return True/False indicating whether or not the user to alarm
+    # relationship is valid.
+    rv = query_db("""
+        select alarm_id, alarm_owner from alarms where
+        alarm_id=%s and alarm_owner=%s limit 1
+        """, (alarm_id, user_id), one=True)
+    return False if not rv else True
+
+
+def set_user_alarm(alarm_id):
+    # Return True/False indicating success or lack of
+    # Note - Alarm_ids come in already verified vs their user
+    alarm_info = query_db("""
+        select alarm_id, alarm_phone, alarm_time, alarm_active
+        from alarms where alarm_id=%s
+        """, alarm_id, one=True)
+    if not alarm_info['alarm_active']:
+        app.logger.debug(
+            'function set_user_alarm FAIL -- alarm_id: %s inactive', alarm_id)
+        return False
+    new_event_id = create_alarm_event(alarm_info['alarm_id'])
+    if not new_event_id:
+        app.logger.debug('Error creating alarm event. User alarm not set.')
+    elif sched.set_alarm(
+            new_event_id,
+            convert_for_scheduler(time=alarm_info['alarm_time']),
+            get_phone_number(alarm_info['alarm_phone'])):
+        app.logger.debug(
+            'new alarm scheduled -- alarm_id: %s, event_id: %s' %
+            (alarm_info['alarm_id'], new_event_id))
+        return True
     return False
+
+
+def unset_user_alarm(alarm_id):
+    # Return True/False indicating success or lack of
+    # Note - Alarm_ids come in already verified vs their user
+    cur_event = query_db("""
+        select event_id, event_owner, event_status from alarm_events
+        where event_owner=%s and event_status=%s
+        """, (alarm_id, 1), one=True)
+    if not cur_event:
+        app.logger.debug(
+            'function unset_user_alarm FAIL -- no active event\nalarm_id: %s',
+            alarm_id)
+        return False
+    db = get_db()
+    cur = db.cursor()
+    if not cur.execute("""
+            update alarm_events set event_end=%s, event_status=%s
+            where event_id=%s
+            """, (datetime.datetime.now(), 0, cur_event['event_id'])):
+        app.logger.debug('unset_user_alarm update db unsuccessful.')
+    else:
+        db.commit()
+        if sched.unset_alarm(cur_event['event_id']):
+            app.logger.debug('alarm unset PASS: alarm_id: %s, event_id: %s' %
+                (alarm_id, cur_event['event_id']))
+            return True
+    return False
+
+
+def update_user_alarm(alarm_id, alarm_time, alarm_phone):
+    #TODO returns t/f indicating success or not
+    #
+    ####### TEMP #######
+    app.logger.debug("""
+        function update_user_alarm FAIL, NOT IMPLEMENTED
+        present data:
+               alarm_id -- value: %s, type: %s
+             alarm_time -- value: %s, type: %s
+            alarm_phone -- value: %s, type: %s
+            """ % (alarm_id, type(alarm_id),
+                   alarm_time, type(alarm_time),
+                   alarm_phone, type(alarm_phone)))
+    return True
 
 
 def create_alarm_event(alarm_id):
+    # Needs to check that it is/will be the only existing active event for
+    # the corresponding alarm. Returns the new event's event_id upon success
+    if query_db("""
+            select event_id, event_owner, event_status from alarm_events
+            where event_owner=%s and event_status=%s
+            """, (alarm_id, 1), one=True):
+        app.logger.debug("""
+            function create_alarm_event FAIL --  active event already exists
+            alarm_id: %s
+            """ % alarm_id)
+        return False
     db = get_db()
     cur = db.cursor()
     cur.execute(
         'insert into alarm_events (event_owner, event_status) values (%s, %s)',
-        (alarm_id, 0))
+        (alarm_id, 1))
     new_event_id = cur.lastrowid
     db.commit()
     if not new_event_id:
-        return None
+        return False
     return new_event_id
 
 
@@ -253,6 +347,19 @@ def format_alarm_time(alarm_time):
 
 def format_alarm_status(status):
     return 'ACTIVE' if status else 'INACTIVE'
+
+
+def format_user_status(status):
+    status_format = {
+        0: 'Inactive',
+        1: 'Free',
+        2: 'Paid'
+    }
+    return status_format[status]
+
+
+def format_user_date(user_date):
+    return user_date.strftime('%b %d, %Y')
 
 
 def format_phone_number(num):
@@ -348,18 +455,22 @@ def user_home():
         return redirect(url_for('home'))
     need_verify_phone=False
     user_id = session['user_id']
-    if not get_user_phones(user_id, verified=True):
+    user_phones = get_user_phones(user_id, verified=True)
+    if not user_phones:
         need_verify_phone=True
-    user_info = query_db('select user_email from users where user_id=%s',
-        user_id, one=True)
-    user_alarms=get_user_alarms(user_id)
+    user_info = query_db("""
+        select user_id, user_email, user_status, user_register from users
+        where user_id=%s""", user_id, one=True)
+    #TODO this is what needs to happen: user_alarms=get_scheduled_alarms(user_id)
+    user_alarms = get_user_alarms(user_id, active_only=True)
     for alarm in user_alarms:
         alarm['phone_number'] = get_phone_number(alarm['alarm_phone'])
     return render_template(
         'user-account-main.html',
-        user_email=user_info['user_email'],
+        user=user_info,
         need_verify_phone=need_verify_phone,
-        user_alarm_list=user_alarms)
+        user_alarm_list=user_alarms,
+        user_phone_list=user_phones)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -431,9 +542,7 @@ def new_alarm():
             error = 'Sorry, there was a problem processing your alarm, try again.'
         else:
             new_alarm_id = create_new_alarm(
-                user_id, request.form['phone'], input_alarm, active=False)
-            app.logger.debug('successfull alarm creation -- alarm_id: %s',
-                new_alarm_id)
+                user_id, request.form['phone'], input_alarm, active=True)
             flash('Awesome! You set an alarm!')
             return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
     user_phones = get_user_phones(session['user_id'])
@@ -441,28 +550,67 @@ def new_alarm():
         user_phones=user_phones)
 
 
+@app.route('/alarm/update/<alarm_id>', methods=['GET', 'POST'])
+def update_alarm(alarm_id):
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    error = None
+    user_id = session['user_id']
+    if not verify_alarm_ownership(user_id, alarm_id):
+        flash('Error updating alarm. Can only modify your own alarms.')
+        return redirect(url_for('user_home'))
+
+    current_alarm = query_db("""
+        select alarm_id, alarm_time, alarm_phone from alarms
+        where alarm_id=%s and alarm_owner=%s
+        """, (alarm_id, user_id), one=True)
+    user_phones = get_user_phones(user_id)
+    current_alarm['phone_number'] = get_phone_number(
+        current_alarm['alarm_phone'])
+
+    if request.method == 'POST':
+        input_alarm = validate_alarm_time(request.form['time'])
+        input_phone = request.form['phone']
+        if not input_alarm:
+            error = 'Sorry, an error has occured. Please try again.'
+        elif (input_alarm == current_alarm['alarm_time']) and (
+                input_phone == current_alarm['alarm_phone']):
+            return redirect(url_for('user_home'))
+        elif not update_user_alarm(alarm_id,
+                alarm_time=input_alarm, alarm_phone=request.form['phone']):
+            error = 'An error has occured. Alarm not updated, pelase try again'
+        else:
+            flash('Alarm successfully updated.')
+            return redirect(url_for('user_home'))
+    return render_template('update-alarm.html', error=error,
+        user_phones=user_phones, current_alarm=current_alarm)
+
+
+@app.route('/alarm/remove/<alarm_id>', methods=['POST'])
+def remove_alarm(alarm_id):
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    elif not verify_alarm_ownership(session['user_id'], alarm_id):
+        flash('Error removing alarm. You can only delete your own alarms!')
+    elif not remove_user_alarm(alarm_id):
+        flash('Error removing alarm. Please try again.')
+    else:
+        flash('Alarm successfully removed.')
+    return redirect(url_for('user_home'))
+
 @app.route('/alarm/set/<alarm_id>')
 def set_alarm(alarm_id):
     if not 'user_id' in session:
         flash('You must be logged in to view this page.')
         return redirect(url_for('login'))
     user_id = session['user_id']
-    if not set_user_alarm(user_id, alarm_id):
-        flash('An error occured, please try again.')
-        app.logger.debug('set_user_alarm FAIL -- user: %s, alarm: %s' %
-            (user_id, alarm_id))
+    if not verify_alarm_ownership(user_id, alarm_id):
+        flash('Error setting alarm. You can only set your own alarms!')
+    elif not set_user_alarm(alarm_id):
+        flash('Error setting alarm. Please try again.')
     else:
-        new_event_id = create_alarm_event(alarm_id)
-        alarm_phone_id = query_db(
-            'select alarm_phone from alarms where alarm_id=%s',
-            alarm_id, one=True)
-        alarm_phone_number = query_db(
-            'select phone_number from user_phones where phone_id=%s',
-            alarm_phone_id['alarm_phone'], one=True)
-        sched.set_alarm(
-            new_event_id,
-            get_alarm_as_datetime(alarm_id),
-            alarm_phone_number['phone_number'])
         flash('Alarm Set!')
     return redirect(url_for('user_home'))
 
@@ -473,17 +621,12 @@ def unset_alarm(alarm_id):
         flash('You must be logged in to view this page.')
         return redirect(url_for('login'))
     user_id = session['user_id']
-    if not unset_user_alarm(user_id, alarm_id):
+    if not verify_alarm_ownership(user_id, alarm_id):
+        flash('Error updating alarm. Can only modify your own alarms.')
+    elif not unset_user_alarm(alarm_id):
         flash('An error occured, please try again.')
-        app.logger.debug('unset_user_alarm FAIL -- user: %s, alarm: %s' %
-            (user_id, alarm_id))
     else:
-        alarm_event = query_db("""
-            select event_id, event_start from alarm_events
-            where event_owner=%s order by event_start desc
-            """, alarm_id, one=True)
-        sched.unset_alarm(alarm_event['event_id'], terminate=True)
-        flash('alarm canceled')
+        flash('Alarm canceled')
     return redirect(url_for('user_home'))
 
 
@@ -511,4 +654,6 @@ def verify_phone():
 # Add some filters to jinja
 app.jinja_env.filters['format_alarm_time'] = format_alarm_time
 app.jinja_env.filters['format_alarm_status'] = format_alarm_status
+app.jinja_env.filters['format_user_status'] = format_user_status
+app.jinja_env.filters['format_user_date'] = format_user_date
 app.jinja_env.filters['format_phone_number'] = format_phone_number
