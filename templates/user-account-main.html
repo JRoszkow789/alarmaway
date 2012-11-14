@@ -30,7 +30,7 @@
 {% block content %}
 <div class="page-header">
   <h1 class="whiteo">
-    {{ user_email }} <small>Alarm Away account</small>
+    {{ user.user_email }} <small>Alarm Away account</small>
   </h1>
 </div>
 <div class="row well well-large major-container">
@@ -105,6 +105,12 @@
             <strong>Set Alarm &raquo;</strong>
           </a>
           {% endif %}
+          <p class="t-center">
+            <strong>Or
+            <a href="{{ url_for('update_alarm', alarm_id=alarm.alarm_id) }}">
+              modify
+            </a>this alarm</strong>
+          </p>
         </div>
       {% else %}
         <div class="alarm-cell">
@@ -118,14 +124,14 @@
           <p>
             <strong>Phone: </strong>(555)555-5555
           </p>
-          <a href="#" class="btn btn-primary btn-large">
+          <a href="{{ url_for('new_alarm') }}" class="btn btn-primary btn-large">
             <strong>Make Your Own &raquo;</strong>
           </a>
         </div>
       {% endfor %}
         <div class="alarm-cell">
           <p class="t-center">
-            <span class="label label-inverse">Your Alarm Here</span>
+            <span class="label label-inverse">Unlimited Alarms!</span>
           </p>
           <h1 class="t-center">+</h1>
           <a href="{{ url_for('new_alarm') }}" class="btn btn-primary btn-large">
@@ -140,12 +146,19 @@
         <div class="span4 well faded-insert">
           <dl>
             <dt>Status
-            <dd>Free <a href="#">Upgrade Account</a>
+            <dd>{{ user.user_status|format_user_status }}
+            {% if user.user_status < 2 %}
+            <dd><a href="#">Upgrade Account</a>
+            {% endif %}
             <dt>Member Since
-            <dd>11/01/2012
+            <dd>{{ user.user_register|format_user_date }}
             <dt>Phones
-            <dd>(813)555-5555<br />
-            <span class="t-right"><a href="#">Add Phone &raquo;</a></span>
+            {% for phone in user_phone_list %}
+            <dd>{{ phone.phone_number|format_phone_number }}
+            {% else %}
+            <dd>No verified phones yet!
+            {% endfor %}
+            <dd><a href="#">Add Phone &raquo;</a>
           </dl>
         </div>
         <div class="span5 offset1 t-center">
@@ -158,6 +171,12 @@
           </a>
         </div>
       </div>
+    </div>
+    <div class="tab-pane" id="moretab">
+      <h4 class="t-center">More Info Here</h4>
+      <p class="t-left">
+        More information here and here and here.
+      </p>
     </div>
   </div>
 </div>

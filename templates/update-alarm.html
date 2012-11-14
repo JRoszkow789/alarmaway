@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block preheader %}
+<style type="text/css">
+  .set-alarm-container {
+    background: #FFF;
+    width: 100%;
+    max-width: 420px;
+    margin: 20px auto;
+    padding: 30px 60px 20px 60px;
+    text-align: center;
+    border: #347EAC dashed 3px;
+    -webkit-border-radius: 5px;
+       -moz-border-radius: 5px;
+            border-radius: 5px;   
+  }
+</style>
+{% endblock %}
+{% block hero_title %}Set An Alarm Away Alarm{% endblock %}
+{% block hero_subtitle %}and never set another alarm again{% endblock %}
+{% block content %}
+<div class="row well well-large major-container">
+  <div class="set-alarm-container faded-insert">
+    <form class="form-horizontal" method="post"
+        action="{{ url_for('update_alarm', alarm_id=current_alarm.alarm_id) }}">
+      <div class="control-group">
+        <label class="control-label" for="time">
+          <a href="#"><i class="icon-question-sign"></i></a> <strong>Alarm Time</strong>
+        </label>
+        <div class="controls">
+          <select name="time" id="time">
+            <option value="00:00">12:00 AM</option>
+            <option value="00:15">12:15 AM</option>
+            <option value="00:30">12:30 AM</option>
+            <option value="00:38">12:45 AM</option>
+            
+            <option value="01:00">1:00 AM</option>
+            <option value="01:15">1:15 AM</option>
+            <option value="01:30">1:30 AM</option>
+            <option value="01:45">1:45 AM</option>
+            
+            <option value="02:00">2:00 AM</option>
+            <option value="02:15">2:15 AM</option>
+            <option value="02:30">2:30 AM</option>
+            <option value="02:45">2:45 AM</option>
+            
+            <option value="03:00">3:00 AM</option>
+            <option value="03:15">3:15 AM</option>
+            <option value="03:30">3:30 AM</option>
+            <option value="03:45">3:45 AM</option>
+            
+            <option value="04:00">4:00 AM</option>
+            <option value="04:15">4:15 AM</option>
+            <option value="04:30">4:30 AM</option>
+            <option value="04:45">4:45 AM</option>
+            
+            <option value="05:00">5:00 AM</option>
+            <option value="05:15">5:15 AM</option>
+            <option value="05:30">5:30 AM</option>
+            <option value="05:45">5:45 AM</option>
+            
+            <option value="06:00">6:00 AM</option>
+            <option value="06:15">6:15 AM</option>
+            <option value="06:30">6:30 AM</option>
+            <option value="06:45">6:45 AM</option>
+           
+            <option value="07:00" selected="selected">7:00 AM</option>
+            <option value="07:15">7:15 AM</option>
+            <option value="07:30">7:30 AM</option>
+            <option value="07:45">7:45 AM</option>
+            
+            <option value="08:00">8:00 AM</option>
+            <option value="08:15">8:15 AM</option>
+            <option value="08:30">8:30 AM</option>
+            <option value="08:45">8:45 AM</option>
+            
+            <option value="09:00">9:00 AM</option>
+            <option value="09:15">9:15 AM</option>
+            <option value="09:30">9:30 AM</option>
+            <option value="09:45">9:45 AM</option>
+            
+            <option value="10:00">10:00 AM</option>
+            <option value="10:15">10:15 AM</option>
+            <option value="10:30">10:30 AM</option>
+            <option value="10:45">10:45 AM</option>
+          
+            <option value="11:00">11:00 AM</option>
+            <option value="11:15">11:15 AM</option>
+            <option value="11:30">11:30 AM</option>
+            <option value="11:45">11:45 AM</option>
+          
+            <option value="12:00">12:00 PM</option>
+            <option value="12:15">12:15 PM</option>
+            <option value="12:30">12:30 PM</option>
+            <option value="12:45">12:45 PM</option>
+        
+            <option value="13:00">1:00 PM</option>
+            <option value="13:15">1:15 PM</option>
+            <option value="13:30">1:30 PM</option>
+            <option value="13:45">1:45 PM</option>
+        
+            <option value="14:00">2:00 PM</option>
+            <option value="14:15">2:15 PM</option>
+            <option value="14:30">2:30 PM</option>
+            <option value="14:45">2:45 PM</option>
+        
+            <option value="15:00">3:00 PM</option>
+            <option value="15:15">3:15 PM</option>
+            <option value="15:30">3:30 PM</option>
+            <option value="15:45">3:45 PM</option>
+        
+            <option value="16:00">4:00 PM</option>
+            <option value="16:15">4:15 PM</option>
+            <option value="16:30">4:30 PM</option>
+            <option value="16:45">4:45 PM</option>
+        
+            <option value="17:00">5:00 PM</option>
+            <option value="17:15">5:15 PM</option>
+            <option value="17:30">5:30 PM</option>
+            <option value="17:45">5:45 PM</option>
+        
+            <option value="18:00">6:00 PM</option>
+            <option value="18:15">6:15 PM</option>
+            <option value="18:30">6:30 PM</option>
+            <option value="18:45">6:45 PM</option>
+        
+            <option value="19:00">7:00 PM</option>
+            <option value="19:15">7:15 PM</option>
+            <option value="19:30">7:30 PM</option>
+            <option value="19:45">7:45 PM</option>
+       
+            <option value="20:00">8:00 PM</option>
+            <option value="20:15">8:15 PM</option>
+            <option value="20:30">8:30 PM</option>
+            <option value="20:45">8:45 PM</option>
+        
+            <option value="21:00">9:00 PM</option>
+            <option value="21:15">9:15 PM</option>
+            <option value="21:30">9:30 PM</option>
+            <option value="21:45">9:45 PM</option>
+        
+            <option value="22:00">10:00 PM</option>
+            <option value="22:15">10:15 PM</option>
+            <option value="22:30">10:30 PM</option>
+            <option value="22:45">10:45 PM</option>
+        
+            <option value="23:00">11:00 PM</option>
+            <option value="23:15">11:15 PM</option>
+            <option value="23:30">11:30 PM</option>
+            <option value="23:45">11:45 PM</option>
+          </select>
+        </div>
+        <span class="help-block">
+          Currently set to {{ current_alarm.alarm_time }}
+        </span>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="phone">
+          <i class="icon-plus"></i> <strong>Phone</strong>
+        </label>
+        <div class="controls">
+          <select name="phone" id="phone">
+            <option>Select phone...</option>
+            {% for num in user_phones %}
+            <option value="{{ num.phone_id }}">
+              {{ num.phone_number|format_phone_number }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <span class="help-block">
+          Currently set to {{ current_alarm.phone_number|format_phone_number }}
+        </span>
+      </div>
+      <div class="t-center">
+        <button type="submit" class="btn btn-warning btn-large">
+          <strong>Update this alarm</strong>
+        </button>
+      </div>
+    </form>
+    <p class="t-center">
+      <a href="#" class="text-error">Delete this alarm</a>
+      <i class="icon-trash"></i>
+    </p>
+  </div>
+</div>
+{% endblock %}
