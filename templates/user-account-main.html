@@ -69,7 +69,7 @@
       <h2 class="t-left">Your alarms:</h2>
       {% if not user_alarm_list %}
       <div class="alert alert-success">
-        <button type="button" class="close" data-toggle="alert">x</button>
+        <button type="button" class="close" data-dismiss="alert">x</button>
         <h4>Add Your First Alarm!</h4>
         <p>Checkout the example below, and add your custom alarm to change the way
           you start your morning.</p>
@@ -80,12 +80,12 @@
         <div class="alarm-cell">
           <p>
             <strong>Status: </strong>
-            {% if alarm.alarm_active %}
+            {% if alarm.alarm_status %}
             <span class="label label-success">
             {% else %}
             <span class="label label-important">
             {% endif %}
-            <strong>{{ alarm.alarm_active|format_alarm_status }}</strong>
+            <strong>{{ alarm.alarm_status|format_alarm_status }}</strong>
             </span>
           </p>
           <p>
@@ -94,7 +94,7 @@
           <p>
             <strong>Phone: </strong>{{ alarm.phone_number|format_phone_number }}
           </p>
-          {% if alarm.alarm_active %}
+          {% if alarm.alarm_status %}
           <a href="{{ url_for('unset_alarm', alarm_id=alarm.alarm_id) }}"
               class="btn btn-primary btn-large">
             <strong>Turn Off Alarm &raquo;</strong>

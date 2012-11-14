@@ -177,8 +177,9 @@
       </div>
     </form>
     <p class="t-center">
-      <a href="#" class="text-error">Delete this alarm</a>
-      <i class="icon-trash"></i>
+      <a href="{{ url_for('remove_alarm', alarm_id=current_alarm.alarm_id) }}"
+        class="text-error">Delete this alarm<i class="icon-trash"></i>
+      </a>
     </p>
   </div>
 </div>

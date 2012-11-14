@@ -183,27 +183,16 @@ def get_user_alarms(user_id, active_only=True):
     return rv
 
 
-def get_scheduled_alarms(user_id):
-    user_alarm_ids = query_db(
-        'select alarm_id from alarms where alarm_owner=%s and alarm_active=%s',
-        (user_id, 1))
-    user_alarm_ids = [alarm['alarm_id'] for alarm in user_alarm_ids]
-    user_alarm_event_owners = query_db("""
-        select event_owner from alarm_events
-        where event_status=%s and event_owner in %s
-        """, (1, user_alarm_ids))
-    user_alarm_event_owners = [str(owner['event_owner']) for owner in user_alarm_event_owners]
-    rv = query_db("""
-        select alarm_id, alarm_phone, alarm_time, alarm_active from alarms
-        where alarm_id in %s
-        """, (user_alarm_event_owners))
-    for v in rv:
-        # TODO Fix this, as above. (since copied from above!)
-        timedelta_val = v['alarm_time']
-        v['alarm_time'] = (datetime.datetime.min + timedelta_val).time()
-    return rv
-
-
+def get_alarm_status(alarm_id):
+    """Takes an alarm_id as a parameter and looks up the given alarm's
+       corresponding alarm events. Returns 0 or 1, representing the alarm
+       having any active alarm_events or having no active events, respectively
+    """
+    active_alarm_events = query_db("""
+        select event_id, event_owner from alarm_events
+        where event_owner=%s and event_status=%s limit 1
+        """, (alarm_id, 1), one=True)
+    return 0 if not active_alarm_events else 1
 
 
 def create_new_alarm(user_id, phone_id, alarm_time, active=False):
@@ -464,6 +453,7 @@ def user_home():
     #TODO this is what needs to happen: user_alarms=get_scheduled_alarms(user_id)
     user_alarms = get_user_alarms(user_id, active_only=True)
     for alarm in user_alarms:
+        alarm['alarm_status'] = get_alarm_status(alarm['alarm_id'])
         alarm['phone_number'] = get_phone_number(alarm['alarm_phone'])
     return render_template(
         'user-account-main.html',
@@ -587,7 +577,7 @@ def update_alarm(alarm_id):
         user_phones=user_phones, current_alarm=current_alarm)
 
 
-@app.route('/alarm/remove/<alarm_id>', methods=['POST'])
+@app.route('/alarm/remove/<alarm_id>')
 def remove_alarm(alarm_id):
     if not 'user_id' in session:
         flash('You must be logged in to view this page.')
