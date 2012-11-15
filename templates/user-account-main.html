@@ -154,17 +154,22 @@
             <dd>{{ user.user_register|format_user_date }}
             <dt>Phones
             {% for phone in user_phone_list %}
-            <dd>{{ phone.phone_number|format_phone_number }}
+            <dd>
+              <a href="{{ url_for('remove_phone', phone_id=phone.phone_id) }}">
+                <i class="icon-trash"></i>
+              </a>
+              {{ phone.phone_number|format_phone_number }}
             {% else %}
             <dd>No verified phones yet!
             {% endfor %}
-            <dd><a href="#">Add Phone &raquo;</a>
+            <dd><a href="{{ url_for('new_phone') }}">Add Phone &raquo;</a>
           </dl>
         </div>
         <div class="span5 offset1 t-center">
           <h4>
-            Upgrading to a premium Alarm Away account provides access to multiple
-            alarms, multiple phones, ultimate customization and much more!
+            Upgrading to a premium Alarm Away account provides access to
+            <span class="header-dark">multiple alarms, multiple phones,</span>
+            ultimate flexibility and <span class="header-dark">much more</span>
           </h4>
           <a href="#" class="btn btn-warning btn-large">
             <strong>Plans and Pricing &raquo;</strong>

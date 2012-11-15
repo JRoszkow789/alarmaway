@@ -80,6 +80,9 @@
   .header-dark {
     color: #393939 !important;
   }
+  .header-blue {
+    color: #317EAC !important;
+  }
 </style>
 </head>
 
@@ -110,9 +113,16 @@
      with block hero_extras.-->
   <div class="hero-unit alarm-hero">
     <div class="hero-content">
-      <h1 class="header-dark">{% block hero_title %}Wake Up To A Good Morning{% endblock %}</h1>
+      <h1>
+      {% block hero_title %}
+        <span class="header-dark">Wake Up To A </span>
+        <span class="header-blue">Good</span> Morning
+      {% endblock %}
+      </h1>
       <h4>
-        {% block hero_subtitle %}Alarm Away, Waking Up A Revolution{% endblock %}
+      {% block hero_subtitle %}
+        Alarm Away, <span class="header-dark">Waking Up</span> A Revolution
+      {% endblock %}
       </h4>
       {% block hero_extras %}{% endblock %}
     </div>
