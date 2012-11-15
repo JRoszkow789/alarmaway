@@ -146,12 +146,17 @@ def get_user_phones(user_id, verified=False):
     second argument allows specification of whether to return all phone
     records found, or only the verified ones.
     """
-    ph = (query_db(
-            'select phone_id, phone_number from user_phones where\
-            phone_owner=%s and phone_verified=%s', (user_id, 1))
-        if verified else query_db(
-            'select phone_id, phone_number from user_phones where\
-            phone_owner=%s', user_id))
+    ph = (
+        query_db("""
+            select phone_id, phone_number from user_phones
+            where phone_owner=%s and phone_verified=%s
+            """, (user_id, 1)
+        ) if verified else query_db("""
+            select phone_id, phone_number, phone_verified from user_phones
+            where phone_owner=%s
+            """, user_id
+        )
+    )
     return ph
 
 
@@ -161,6 +166,21 @@ def get_phone_number(request_phone_id):
     if rv is not None:
         return rv['phone_number']
     return None
+
+
+def remove_user_phone(user_id, phone_id):
+    db = get_db()
+    cur = db.cursor()
+    if not cur.execute(
+            'delete from user_phones where phone_id=%s and phone_owner=%s',
+            (phone_id, user_id)):
+        app.logger.debug('failed attempt to remove phone_id: %s, user_id: %s' %
+            (phone_id, user_id))
+        return False
+    db.commit()
+    app.logger.debug('removed user_phone -- phone_id: %s, user_id: %s' %
+        (phone_id, user_id))
+    return True
 
 
 def get_user_alarms(user_id, active_only=True):
@@ -407,8 +427,8 @@ def registration():
                     an Alarm Away account.')
             else:
                 uv_code = generate_verification_code()
-                process_phone_verification(user_phone, uv_code)
                 session['uv_code'] = uv_code
+                process_phone_verification(user_phone, uv_code)
 
         else:
             user_phone = session.pop('user_phone')
@@ -428,7 +448,7 @@ def registration():
             error = 'Please enter a valid email address.'
         elif not user_password:
             error = 'Please enter a valid password.'
-        elif not is_email_unique(user_email):
+        else:
             error = 'That email address is already registered with Alarm Away.'
 
     target_template = (
@@ -444,9 +464,10 @@ def user_home():
         return redirect(url_for('home'))
     need_verify_phone=False
     user_id = session['user_id']
-    user_phones = get_user_phones(user_id, verified=True)
-    if not user_phones:
-        need_verify_phone=True
+    user_phones = get_user_phones(user_id, verified=False)
+    for phone in user_phones:
+        if not phone['phone_verified']:
+            need_verify_phone=True
     user_info = query_db("""
         select user_id, user_email, user_status, user_register from users
         where user_id=%s""", user_id, one=True)
@@ -590,6 +611,7 @@ def remove_alarm(alarm_id):
         flash('Alarm successfully removed.')
     return redirect(url_for('user_home'))
 
+
 @app.route('/alarm/set/<alarm_id>')
 def set_alarm(alarm_id):
     if not 'user_id' in session:
@@ -620,7 +642,50 @@ def unset_alarm(alarm_id):
     return redirect(url_for('user_home'))
 
 
-@app.route('/verify-phone', methods=['POST'])
+@app.route('/phone/new', methods=['GET', 'POST'])
+def new_phone():
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    elif query_db("""
+            select phone_id from user_phones
+            where phone_owner=%s and phone_verified=%s
+            """, (session['user_id'], 0), one=True):
+        flash('You currently have an unverified phone. Please verify first.')
+        return redirect(url_for('user_home'))
+    error = None
+    if request.method == 'POST':
+        user_phone = validate_phone_number(request.form['user_phone'])
+        if not user_phone:
+            error = 'You must enter a valid phone number'
+        elif not is_number_unique(user_phone):
+            error = 'That phone number is already associated with an account.'
+        else:
+            uv_code = generate_verification_code()
+            session['uv_code'] = uv_code
+            process_phone_verification(user_phone, uv_code)
+            if create_new_phone(session['user_id'], user_phone):
+                flash('Successfully added new phone!')
+                return redirect(url_for('user_home'))
+            else:
+                flash('Error adding new phone. Please try again later.')
+    return render_template('add-new-phone.html', error=error)
+
+
+@app.route('/phone/remove/<phone_id>')
+def remove_phone(phone_id):
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    elif not remove_user_phone(session['user_id'], phone_id):
+        flash('An error has occured. Please try again.\
+        Remember, you can only modify your own phones.')
+    else:
+        flash('Successfully removed phone')
+    return redirect(url_for('user_home'))
+
+
+@app.route('/phone/verify', methods=['POST'])
 def verify_phone():
     user_id = session['user_id']
     ver_attempt = request.form['ver_attempt']
