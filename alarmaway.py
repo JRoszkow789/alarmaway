@@ -6,6 +6,7 @@ import MySQLdb.cursors
 import logging
 import random
 import datetime
+import pytz
 import scheduler
 import re
 from werkzeug import generate_password_hash, check_password_hash
@@ -59,25 +60,21 @@ def query_db(query, args=(), one=False):
     return rv
 
 
-def validate_alarm_time(alarm_time):
-    hours, mins = alarm_time.split(':')
-    if alarm_time:
-        return datetime.time(hour=int(hours), minute=int(mins))
-    return None
-
-
-def convert_for_scheduler(time=None):
-    #TODO idea was to be robust, time, date_time, etc...
-    # time is a time_delta, which is what currently gets returned by mysql
-    #
-    ####### TEMP #######
-    return datetime.datetime.utcnow()
+def validate_email(email):
+    rv = EMAIL_RE.search(email)
+    return None if rv is None else rv.group()
 
 
 def validate_phone_number(num):
     rv = PHONE_RE.search(num)
     return None if rv is None else (
         rv.group(1) + rv.group(2) + rv.group(3))
+
+
+def is_email_unique(email):
+    rv = query_db('select user_id from users where user_email=%s',
+        email, one=True)
+    return False if rv is not None else True
 
 
 def is_number_unique(num):
@@ -92,9 +89,29 @@ def is_email_unique(email):
     return False if rv is not None else True
 
 
-def validate_email(email):
-    rv = EMAIL_RE.search(email)
-    return None if rv is None else rv.group()
+def format_alarm_time(alarm_time):
+    return alarm_time.strftime('%I:%M %p')
+
+
+def format_alarm_status(status):
+    return 'ACTIVE' if status else 'INACTIVE'
+
+
+def format_user_status(status):
+    status_format = {
+        0: 'Inactive',
+        1: 'Free',
+        2: 'Paid'
+    }
+    return status_format[status]
+
+
+def format_user_date(user_date):
+    return user_date.strftime('%b %d, %Y')
+
+
+def format_phone_number(num):
+    return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
 
 
 def create_new_user(email, pw_hash):
@@ -102,11 +119,22 @@ def create_new_user(email, pw_hash):
     """
     db = get_db()
     cur = db.cursor()
-    cur.execute(
-        '''insert into users (user_email, user_pw, user_role, user_status)
-        values (%s, %s, %s, %s)''', (email, pw_hash, constants.USER,
-        constants.NEW))
+    cur.execute("""
+        insert into users (user_email, user_pw, user_role, user_status)
+        values (%s, %s, %s, %s)
+        """, (email, pw_hash, constants.USER, constants.NEW)
+    )
     new_user_id = cur.lastrowid
+
+#TODO this needs to be dynamic and optional obviously
+    cur.execute(
+        'insert into user_properties values (%s, %s, %s, %s)', (
+        None, new_user_id, 'user_tz', 'US/Eastern'
+    ))
+    new_up_id = cur.lastrowid
+    app.logger.debug(
+        'new user created -- id: %s, tz_property_id: %s' % (
+        new_user_id, new_up_id))
     db.commit()
     return new_user_id
 
@@ -194,12 +222,6 @@ def get_user_alarms(user_id, active_only=True):
             select alarm_id, alarm_phone, alarm_time, alarm_active from alarms
             where alarm_owner=%s
             """, user_id)
-    for v in rv:
-        # TODO Fix this, probably will be best to do as a whole revamp to the
-        # timing system, either using timezone(s) or using Unix-style time.
-        # This time/timedelta/mysqldb crap is stupid as hell
-        timedelta_val = v['alarm_time']
-        v['alarm_time'] = (datetime.datetime.min + timedelta_val).time()
     return rv
 
 
@@ -273,7 +295,7 @@ def set_user_alarm(alarm_id):
         app.logger.debug('Error creating alarm event. User alarm not set.')
     elif sched.set_alarm(
             new_event_id,
-            convert_for_scheduler(time=alarm_info['alarm_time']),
+            next_run_time(get_alarm_time(alarm_info['alarm_time'])),
             get_phone_number(alarm_info['alarm_phone'])):
         app.logger.debug(
             'new alarm scheduled -- alarm_id: %s, event_id: %s' %
@@ -350,29 +372,86 @@ def create_alarm_event(alarm_id):
     return new_event_id
 
 
-def format_alarm_time(alarm_time):
-    return alarm_time.strftime('%I:%M %p')
+def get_utc(local_tm, tz):
+    local_tz = pytz.timezone(tz)
+    utc = pytz.utc
+    dummy_date = datetime.datetime(
+        year=2005, month=7, day=17, hour=local_tm.hour, minute=local_tm.minute)
+    dummy_date = local_tz.localize(dummy_date)
+    utc_date = dummy_date.astimezone(utc)
+    rv = utc_date.time()
+    rv.replace(tzinfo=None) # Ensure that our return value is timezone naive
+    app.logger.debug("""
+        function get_utc
+        params -- local_tm: %s, tz: %s
+        zones -- local_tz: %s, utc: %s
+        dates -- dummy: %s
+                   utc: %s
+        return value: %s
+        """ % (local_tm, tz, local_tz, utc, dummy_date, utc_date, rv
+    ))
+    return rv
 
 
-def format_alarm_status(status):
-    return 'ACTIVE' if status else 'INACTIVE'
+def get_local(utc_time, tz):
+    local_tz = pytz.timezone(tz)
+    utc = pytz.utc
+    dummy_date = datetime.datetime(
+        year=2005, month=7, day=17, hour=utc_time.hour, minute=utc_time.minute)
+    dummy_date = utc.localize(dummy_date)
+    local_date = dummy_date.astimezone(local_tz)
+    rv = local_date.time()
+    rv.replace(tzinfo=None) # Ensure that our return value is timezone naive
+    app.logger.debug("""
+        function get_local
+        params -- utc_time: %s, tz: %s
+        zones -- local_tz: %s, utc: %s
+        dates -- dummy: %s
+                 local: %s
+        return value: %s
+        """ % (utc_time, tz, local_tz, utc, dummy_date, local_date, rv
+    ))
+    return rv
 
 
-def format_user_status(status):
-    status_format = {
-        0: 'Inactive',
-        1: 'Free',
-        2: 'Paid'
-    }
-    return status_format[status]
+def get_alarm_time(alarm_timedelta):
+    return (datetime.datetime.min + alarm_timedelta).time()
 
 
-def format_user_date(user_date):
-    return user_date.strftime('%b %d, %Y')
+def next_run_time(alarm_time):
+    now = datetime.datetime.utcnow()
+    run_time = None
+    if alarm_time > now.time():
+        run_time = datetime.datetime(
+            year=now.year, month=now.month, day=now.day,
+            hour=alarm_time.hour, minute=alarm_time.minute
+        )
+    else:
+        tomorrow = now + datetime.timedelta(days=1)
+        run_time = datetime.datetime(
+            year=tomorrow.year, month=tomorrow.month, day=tomorrow.day,
+            hour=alarm_time.hour, minute=alarm_time.minute
+        )
+    app.logger.debug(
+        '<next_run_time> alarm_time: %s, run_today: %s' % (
+        alarm_time, run_time.day==now.day
+    ))
+    return run_time
 
 
-def format_phone_number(num):
-    return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
+def validate_alarm_time(alarm_time):
+    hours, mins = alarm_time.split(':')
+    if alarm_time:
+        return datetime.time(hour=int(hours), minute=int(mins))
+    return None
+
+
+def convert_for_scheduler(time=None):
+    #TODO idea was to be robust, time, date_time, etc...
+    # time is a time_delta, which is what currently gets returned by mysql
+    #
+    ####### TEMP #######
+    return datetime.datetime.utcnow()
 
 
 @app.route('/')
@@ -440,8 +519,6 @@ def registration():
             new_user_id = create_new_user(user_email,
                 generate_password_hash(user_password))
             new_phone_id = create_new_phone(new_user_id, user_phone)
-            app.logger.debug('new user created -- id: %s, phone_id: %s' %
-                (new_user_id, new_phone_id))
             session['user_id'] = new_user_id
             return redirect(url_for('user_home'))
         elif not user_email:
@@ -471,9 +548,14 @@ def user_home():
     user_info = query_db("""
         select user_id, user_email, user_status, user_register from users
         where user_id=%s""", user_id, one=True)
-    #TODO this is what needs to happen: user_alarms=get_scheduled_alarms(user_id)
     user_alarms = get_user_alarms(user_id, active_only=True)
+    user_tz = query_db(
+        'select up_value from user_properties where up_user=%s and up_key=%s',(
+        user_id, 'user_tz'), one=True
+    )
     for alarm in user_alarms:
+        alarm['alarm_time'] = get_alarm_time(alarm['alarm_time'])
+        alarm['local_time'] = get_local(alarm['alarm_time'],user_tz['up_value'])
         alarm['alarm_status'] = get_alarm_status(alarm['alarm_id'])
         alarm['phone_number'] = get_phone_number(alarm['alarm_phone'])
     return render_template(
@@ -550,8 +632,13 @@ def new_alarm():
     if request.method == 'POST':
         input_alarm = validate_alarm_time(request.form['time'])
         if input_alarm is None:
-            error = 'Sorry, there was a problem processing your alarm, try again.'
+            error = 'Uh-oh, an error occured. Please try again.'
         else:
+            input_alarm = get_utc(input_alarm, tz=query_db("""
+                select up_value from user_properties
+                where up_user=%s and up_key=%s limit 1
+                """, (user_id, 'user_tz'), one=True
+            )['up_value']) #TODO << I HATE THIS CRAP
             new_alarm_id = create_new_alarm(
                 user_id, request.form['phone'], input_alarm, active=True)
             flash('Awesome! You set an alarm!')
