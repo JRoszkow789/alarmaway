@@ -73,4 +73,17 @@ create table responses (
 	response_msg varchar(255) not null,
 	primary key (response_id)
 );
+drop table if exists user_properties;
+create table user_properties (
+	up_id int unsigned not null auto_increment,
+	up_user int unsigned not null,
+	up_key varchar(27) not null,
+	up_value varchar(255) not null,
+	primary key (up_id)
+);
+alter table user_properties
+add constraint fk_up_user
+foreign key (up_user) references users(user_id)
+on update cascade
+on delete cascade;
 set foreign_key_checks = 1;
