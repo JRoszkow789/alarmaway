@@ -334,17 +334,6 @@ def unset_user_alarm(alarm_id):
 
 def update_user_alarm(alarm_id, alarm_time, alarm_phone):
     #TODO returns t/f indicating success or not
-    #
-    ####### TEMP #######
-    app.logger.debug("""
-        function update_user_alarm FAIL, NOT IMPLEMENTED
-        present data:
-               alarm_id -- value: %s, type: %s
-             alarm_time -- value: %s, type: %s
-            alarm_phone -- value: %s, type: %s
-            """ % (alarm_id, type(alarm_id),
-                   alarm_time, type(alarm_time),
-                   alarm_phone, type(alarm_phone)))
     return True
 
 
@@ -373,45 +362,36 @@ def create_alarm_event(alarm_id):
 
 
 def get_utc(local_tm, tz):
+    utc_tz = pytz.utc
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=utc_tz)
     local_tz = pytz.timezone(tz)
-    utc = pytz.utc
-    dummy_date = datetime.datetime(
-        year=2005, month=7, day=17, hour=local_tm.hour, minute=local_tm.minute)
-    dummy_date = local_tz.localize(dummy_date)
-    utc_date = dummy_date.astimezone(utc)
-    rv = utc_date.time()
-    rv.replace(tzinfo=None) # Ensure that our return value is timezone naive
-    app.logger.debug("""
-        function get_utc
+    local_now = local_tz.normalize(utc_now)
+    local_alarm = local_now.replace(hour=local_tm.hour, minute=local_tm.minute)
+    utc_alarm = utc_tz.normalize(local_alarm)
+    app.logger.debug('''
+        function :: get_utc
         params -- local_tm: %s, tz: %s
-        zones -- local_tz: %s, utc: %s
-        dates -- dummy: %s
-                   utc: %s
-        return value: %s
-        """ % (local_tm, tz, local_tz, utc, dummy_date, utc_date, rv
+        utc -- now: %s, alarm: %s
+        local -- now: %s, tz: %s, alarm: %s
+        ''' % (local_tm, tz, utc_now, utc_alarm, local_now, local_tz,local_alarm
     ))
-    return rv
+    return utc_alarm.time()
 
 
 def get_local(utc_time, tz):
+    utc_tz = pytz.utc
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=utc_tz)
+    utc_alarm = utc_now.replace(hour=utc_time.hour, minute=utc_time.minute)
     local_tz = pytz.timezone(tz)
-    utc = pytz.utc
-    dummy_date = datetime.datetime(
-        year=2005, month=7, day=17, hour=utc_time.hour, minute=utc_time.minute)
-    dummy_date = utc.localize(dummy_date)
-    local_date = dummy_date.astimezone(local_tz)
-    rv = local_date.time()
-    rv.replace(tzinfo=None) # Ensure that our return value is timezone naive
-    app.logger.debug("""
-        function get_local
-        params -- utc_time: %s, tz: %s
-        zones -- local_tz: %s, utc: %s
-        dates -- dummy: %s
-                 local: %s
-        return value: %s
-        """ % (utc_time, tz, local_tz, utc, dummy_date, local_date, rv
+    local_alarm = local_tz.normalize(utc_alarm)
+    app.logger.debug('''
+        function :: get_local
+        params -- utc_tm: %s, tz: %s
+        utc -- now: %s, alarm: %s
+        local -- tz: %s, alarm: %s
+        ''' % (utc_time, tz, utc_now, utc_alarm, local_tz, local_alarm
     ))
-    return rv
+    return local_alarm.time()
 
 
 def get_alarm_time(alarm_timedelta):
@@ -444,14 +424,6 @@ def validate_alarm_time(alarm_time):
     if alarm_time:
         return datetime.time(hour=int(hours), minute=int(mins))
     return None
-
-
-def convert_for_scheduler(time=None):
-    #TODO idea was to be robust, time, date_time, etc...
-    # time is a time_delta, which is what currently gets returned by mysql
-    #
-    ####### TEMP #######
-    return datetime.datetime.utcnow()
 
 
 @app.route('/')
