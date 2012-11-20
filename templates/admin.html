@@ -2,44 +2,63 @@
 {% block hero_title %}Alarm Away Admin Page{% endblock %}
 {% block hero_subtitle %}View all data in the current application context.{% endblock %}
 {% block content %}
-<div class="row">
-  <div class="span8 offset2 t-left">
-    <h3 class="t-center">Users</h3>
-    <ul>
-    {% for user in users %}
-      <li>
-        <strong>id: {{ user.user_id }}</strong> email: {{ user.user_email }}
-          role: {{ user.user_role }} status: {{ user.user_status }}
-      </li>
-    {% endfor %}
-    </ul>
+<div class="row well well-large major-container">
+  <div class="row row-zero">
+    <div class="span8 offset2 t-left">
+      <h3 class="t-center">Users</h3>
+      <ul>
+      {% for user in users %}
+        <li>
+          <strong>id: {{ user.user_id }}</strong>
+          email: {{ user.user_email }}
+          role: {{ user.user_role }}
+          status: {{ user.user_status }}
+        </li>
+      {% endfor %}
+      </ul>
+    </div>
   </div>
-</div>
-<div class="row">
-  <div class="span8 offset2 t-left">
-    <h3 class="t-center">Phones</h3>
-    <ul>
-    {% for phone in phones %}
-      <li>
-        <strong>id: {{ phone.phone_id }}</strong> number: {{ phone.phone_number }}
-          owner: {{ phone.phone_owner }} verified: {{ phone.phone_verified }}
-      </li>
-    {% endfor %}
-    </ul>
+  <div class="row row-zero">
+    <div class="span8 offset2 t-left">
+      <h3 class="t-center">Phones</h3>
+      <ul>
+      {% for phone in phones %}
+        <li>
+          <strong>id: {{ phone.phone_id }}</strong>
+          number: {{ phone.phone_number }}
+          owner: {{ phone.phone_owner }}
+          verified: {{ phone.phone_verified }}
+        </li>
+      {% endfor %}
+      </ul>
+    </div>
   </div>
-</div>
-<div class="row">
-  <div class="span8 offset2 t-left">
-    <h3 class="t-center">Alarms</h3>
-    <ul>
-    {% for alarm in alarms %}
-      <li>
-        <strong>id: {{ alarm.alarm_id }}</strong> owner: {{ alarm.alarm_owner }}
-          phone: {{ alarm.alarm_phone }} time: {{ alarm.alarm_time }}
-          status(active): {{ alarm.alarm_active }}
-      </li>
-    {% endfor %}
-    </ul>
+  <div class="row row-zero">
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">Alarms</h3></caption>
+        <thead>
+          <tr>
+            <th>Alarm ID</th>
+            <th>Alarm Owner ID</th>
+            <th>Alarm Phone ID</th>
+            <th>Alarm Time</th>
+            <th>Alarm Status</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for alarm in alarms %}
+          <tr>
+            <td><strong>{{ alarm.alarm_id }}</strong></td>
+            <td>{{ alarm.alarm_owner }}</td>
+            <td>{{ alarm.alarm_phone }}</td>
+            <td>{{ alarm.alarm_time }}</td>
+            <td>{{ alarm.alarm_active }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 {% endblock %}
