@@ -132,9 +132,6 @@ def create_new_user(email, pw_hash):
         None, new_user_id, 'user_tz', 'US/Eastern'
     ))
     new_up_id = cur.lastrowid
-    app.logger.debug(
-        'new user created -- id: %s, tz_property_id: %s' % (
-        new_user_id, new_up_id))
     db.commit()
     return new_user_id
 
@@ -202,12 +199,8 @@ def remove_user_phone(user_id, phone_id):
     if not cur.execute(
             'delete from user_phones where phone_id=%s and phone_owner=%s',
             (phone_id, user_id)):
-        app.logger.debug('failed attempt to remove phone_id: %s, user_id: %s' %
-            (phone_id, user_id))
         return False
     db.commit()
-    app.logger.debug('removed user_phone -- phone_id: %s, user_id: %s' %
-        (phone_id, user_id))
     return True
 
 
@@ -249,10 +242,6 @@ def create_new_alarm(user_id, phone_id, alarm_time, active=False):
          alarm_time, active))
     new_alarm_id = cur.lastrowid
     db.commit()
-    app.logger.debug('''new alarm created --\nuser_id: %s\nphone_id: %s\n
-                        alarm_time: %s\nactive: %s\nnew_alarm_id: %s''' % (
-                        user_id, phone_id, alarm_time, active,
-                        new_alarm_id))
     return new_alarm_id
 
 
@@ -313,8 +302,9 @@ def unset_user_alarm(alarm_id):
         """, (alarm_id, 1), one=True)
     if not cur_event:
         app.logger.debug(
-            'function unset_user_alarm FAIL -- no active event\nalarm_id: %s',
-            alarm_id)
+            'unset_user_alarm FAIL -- no active event - alarm_id: %s' %
+            alarm_id
+        )
         return False
     db = get_db()
     cur = db.cursor()
@@ -322,7 +312,7 @@ def unset_user_alarm(alarm_id):
             update alarm_events set event_end=%s, event_status=%s
             where event_id=%s
             """, (datetime.datetime.now(), 0, cur_event['event_id'])):
-        app.logger.debug('unset_user_alarm update db unsuccessful.')
+        app.logger.warn('unset_user_alarm update db unsuccessful.')
     else:
         db.commit()
         if sched.unset_alarm(cur_event['event_id']):
@@ -345,7 +335,7 @@ def create_alarm_event(alarm_id):
             where event_owner=%s and event_status=%s
             """, (alarm_id, 1), one=True):
         app.logger.debug("""
-            function create_alarm_event FAIL --  active event already exists
+            create_alarm_event FAIL --  active event already exists
             alarm_id: %s
             """ % alarm_id)
         return False
@@ -368,13 +358,6 @@ def get_utc(local_tm, tz):
     local_now = local_tz.normalize(utc_now)
     local_alarm = local_now.replace(hour=local_tm.hour, minute=local_tm.minute)
     utc_alarm = utc_tz.normalize(local_alarm)
-    app.logger.debug('''
-        function :: get_utc
-        params -- local_tm: %s, tz: %s
-        utc -- now: %s, alarm: %s
-        local -- now: %s, tz: %s, alarm: %s
-        ''' % (local_tm, tz, utc_now, utc_alarm, local_now, local_tz,local_alarm
-    ))
     return utc_alarm.time()
 
 
@@ -384,18 +367,30 @@ def get_local(utc_time, tz):
     utc_alarm = utc_now.replace(hour=utc_time.hour, minute=utc_time.minute)
     local_tz = pytz.timezone(tz)
     local_alarm = local_tz.normalize(utc_alarm)
-    app.logger.debug('''
-        function :: get_local
-        params -- utc_tm: %s, tz: %s
-        utc -- now: %s, alarm: %s
-        local -- tz: %s, alarm: %s
-        ''' % (utc_time, tz, utc_now, utc_alarm, local_tz, local_alarm
-    ))
     return local_alarm.time()
 
 
 def get_alarm_time(alarm_timedelta):
     return (datetime.datetime.min + alarm_timedelta).time()
+
+
+def alarm_is_recent(alarm_time, alarm_id):
+    # Return T/F based on whether or not time is (for now) within the last hour
+    now = datetime.datetime.utcnow()
+    if now.time() < alarm_time:
+        app.logger.debug('alarm_is_recent(%s) - False, now: %s, alarm: %s' % (
+            alarm_id, now.time(), alarm_time))
+        return False
+    elif (now - datetime.timedelta(seconds=3600)).time() > alarm_time:
+        app.logger.debug(
+            'alarm_is_recent(%s) - False, now: %s, then: %s, alarm: %s' % (
+            alarm_id, now.time(), (now - datetime.timedelta(seconds=3600)).time(),
+            alarm_time)
+        )
+        return False
+    app.logger.debug('alarm_is_recent(%s) - True, now: %s, alarm: %s' % (
+        alarm_id, now.time(), alarm_time))
+    return True
 
 
 def next_run_time(alarm_time):
@@ -456,6 +451,28 @@ def pre_registration():
 
         return redirect(url_for('registration'))
     return render_template('welcome.html', error=error, numerror=numerror)
+
+
+@app.route('/alarm/respond/<from_number>')
+def alarm_response(from_number):
+    phone_id = query_db(
+        'select phone_id from user_phones where phone_number=%s',
+        from_number, one=True
+    )
+    related_alarms = query_db("""
+        select alarm_id, alarm_time, alarm_active from alarms
+        where alarm_phone=%s
+        """, phone_id['phone_id']
+    )
+    recent_alarms = [alarm for alarm in related_alarms
+        if alarm_is_recent(get_alarm_time(alarm['alarm_time']), alarm['alarm_id'])]
+    for alarm in recent_alarms:
+        if unset_user_alarm(alarm['alarm_id']):
+            flash("Alarm off, don't forget to turn it back on when you need it!")
+        if alarm['alarm_active']:
+            set_user_alarm(alarm['alarm_id'])
+            flash('Alarm off for the day, Talk to ya tomorrow!')
+    return redirect(url_for('user_home'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
