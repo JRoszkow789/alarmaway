@@ -1,5 +1,5 @@
 requirements.txt
-runserver.*
+run_server.*
 config.*
 shell.*
 *.*c
@@ -7,3 +7,4 @@ shell.*
 */*.*c
 */*.*~
 logs/*
+.gitignore

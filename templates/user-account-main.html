@@ -89,7 +89,11 @@
             </span>
           </p>
           <p>
+          {% if alarm.next_run_time %}
+            <strong>Goes off: </strong>{{ alarm.next_run_time|format_alarm_time }}
+          {% else %}
             <strong>Time: </strong>{{ alarm.local_time|format_alarm_time }}
+          {% endif %}
           </p>
           <p>
             <strong>Phone: </strong>{{ alarm.phone_number|format_phone_number }}
