@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block hero_title %}
+  Uh oh...
+{% endblock %}
+{% block hero_subtitle %}
+  Something broke... Somewhere
+{% endblock %}
+{% block content %}
+<div class="row well well-large major-container">
+  <div class="t-center">
+    <h2>Oops! Our server does not agree...</h2>
+    <h4 class="header-dark">You have arrived at this page because our server reported an
+      error. We are actively working on fixing this, and if you have any comments or
+      questions. Please, <a href="#">Let us know!</a></h4>
+    <h4 class="header-dark"><a href="{{ url_for('home') }}" class="btn btn-primary">Back to Home Page</a></h4>
+  </div>
+</div>
+{% endblock %}

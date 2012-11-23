@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block hero_title %}
+  Hmm...
+{% endblock %}
+{% block hero_subtitle %}
+  That page was not found
+{% endblock %}
+{% block content %}
+<div class="row well well-large major-container">
+  <div class="t-center">
+    <h2>Here's some possibilities:</h2>
+    <h4 class="header-dark">If you came here from a link on our site, that's a problem! <a href="#">Please let us know!</a></h4>
+    <h4 class="header-dark">If you came here from another site, they might be a little outdated...</h4>
+    <h4 class="header-dark">If you typed in the URL, double check your entry</h4>
+    <h4 class="header-dark"><a href="{{ url_for('home') }}" class="btn btn-primary">Back to Home Page</a></h4>
+  </div>
+</div>
+{% endblock %}
