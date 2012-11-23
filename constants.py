@@ -1,13 +1,11 @@
 # User Status
 INACTIVE = 0
-NEW = 1
-UNVERIFIED = 2
-ACTIVE = 3
+FREE = 1
+PREMIUM = 2
 USER_STATUS = {
-    INACTIVE: 'inactive',
-    NEW: 'new',
-    UNVERIFIED: 'unverified',
-    ACTIVE: 'active',
+    INACTIVE: 'Inactive',
+    FREE: 'Free',
+    PREMIUM: 'Premium',
 }
 
 # User role
