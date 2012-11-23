@@ -3,28 +3,22 @@ from contextlib import closing
 from celery import Celery
 from datetime import timedelta
 import aa_comm
-import config
+from config import DB_HOST, DB_USER, DB_PW, DB_PORT, DATABASE
+from config import COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER
 
-COMM_ACCOUNT_ID = 'AC52113fd0906659e7c6091e1c5d754ac7'
-COMM_AT = '799a5ee66e106ca62f1f2fff8ba24220'
-COMM_FROM_NUMBER = '8133584864'
-CALL_URL = 'http://canopyinnovation.com/twresp.xml'
 
-celery = Celery(
-    'scheduler',
-    backend='amqp://guest@localhost//',
-    broker='amqp://guest@localhost//'
-)
+celery = Celery('scheduler')
+celery.config_from_object('celeryconfig')
 
 
 def get_db():
     """Opens a new database connection"""
     mysql_db = MySQLdb.connect(
-        host='localhost',
-        user='alarmaway_app',
-        passwd='aAa7seVen7',
-        port=3306,
-        db='AlarmAway')
+        host=DB_HOST,
+        user=DB_USER,
+        passwd=DB_PW,
+        port=DB_PORT,
+        db=DATABASE)
     return mysql_db
 
 
@@ -50,7 +44,7 @@ class AlarmScheduler:
     def set_alarm(self, ref_id, alarm_time, phone_number):
         alarm_asyncs = []
         for typ, msg in self.alarm_messages:
-            msg_time = alarm_time + timedelta(seconds=(60*(len(alarm_asyncs))))
+            msg_time = alarm_time + timedelta(seconds=(240*(len(alarm_asyncs))))
             if typ == 'call':
                 alarm_asyncs.append(send_user_call.apply_async(
                     args=(msg, phone_number), eta=msg_time))
