@@ -404,6 +404,17 @@ def validate_alarm_time(alarm_time):
     return None
 
 
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def server_error(error):
+    app.logger.info('ERROR 500 -- %s' % error)
+    return render_template('500.html'), 500
+
+
 @app.route('/')
 def home():
     if 'user_id' in session:
