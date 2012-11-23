@@ -15,7 +15,6 @@ import constants
 
 app = Flask(__name__)
 app.config.from_object('config')
-#logging.basicConfig(filename='aa_dbg.log', level=logging.DEBUG)
 sched = scheduler.AlarmScheduler()
 
 
@@ -417,11 +416,11 @@ def pre_registration():
     if request.method != 'POST':
         return redirect(url_for('registration'))
     error = None
-    input_alarm = validate_alarm_time(request.form['time'])
+    input_tz = request.form['timezone']
     input_phone = validate_phone_number(request.form['phone'])
-    if input_alarm is None:
-        error = 'Sorry, there was a problem processing your alarm, try again.'
-    elif input_phone is None:
+    if not input_tz:
+        error = 'You must specify the timezone which your alarms are set for.'
+    elif not input_phone:
         error = 'Please enter a valid phone number.'
     elif not is_number_unique(input_phone):
         error = ('Sorry, that phone number is already registered.')
@@ -431,9 +430,9 @@ def pre_registration():
         session.pop('uv_code', None)
         session['uv_code'] = uv_code
         session.pop('user_alarm', None)
-        session['user_alarm'] = input_alarm
         session.pop('user_phone', None)
         session['user_phone'] = input_phone
+        session['user_tz'] = input_tz
         return redirect(url_for('registration'))
     return render_template('welcome.html', error=error)
 
@@ -448,7 +447,11 @@ def registration():
     if request.method == 'POST':
         if not phone_prev_present:
             user_phone = validate_phone_number(request.form['user_phone'])
-            if not user_phone:
+            user_tz = request.form['user_tz']
+            if not user_tz:
+                return render_template('register-new.html',
+                    error="You must select a timezone")
+            elif not user_phone:
                 return render_template('register-new.html',
                     error = "Please enter a valid phone number")
             elif not is_number_unique(user_phone):
@@ -466,7 +469,11 @@ def registration():
             # All input data is sanitized and validated. Create user and phone
             new_user_id = create_new_user(user_email,
                 generate_password_hash(user_password))
-            new_tz_id = add_new_user_timezone(new_user_id, 'US/Eastern')
+            new_user_tz = 'US/Eastern' if user_tz == '0' else None
+            if not add_new_user_timezone(new_user_id, new_user_tz):
+                flash('Error adding timezone, please try again')
+            else:
+                session.pop('user_tz', None)
             new_phone_id = create_new_phone(new_user_id, user_phone)
             session['user_id'] = new_user_id
             return redirect(url_for('user_home'))
