@@ -3,6 +3,7 @@ from contextlib import closing
 from celery import Celery
 from datetime import timedelta
 import aa_comm
+import config
 
 COMM_ACCOUNT_ID = 'AC52113fd0906659e7c6091e1c5d754ac7'
 COMM_AT = '799a5ee66e106ca62f1f2fff8ba24220'

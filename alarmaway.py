@@ -15,6 +15,7 @@ import constants
 
 app = Flask(__name__)
 app.config.from_object('config')
+#logging.basicConfig(filename='aa_dbg.log', level=logging.DEBUG)
 sched = scheduler.AlarmScheduler()
 
 
@@ -82,12 +83,6 @@ def is_number_unique(num):
     return False if rv is not None else True
 
 
-def is_email_unique(email):
-    rv = query_db('select user_id from users where user_email=%s',
-        email, one=True)
-    return False if rv is not None else True
-
-
 def format_alarm_time(alarm_time):
     return alarm_time.strftime('%I:%M %p')
 
@@ -97,12 +92,7 @@ def format_alarm_status(status):
 
 
 def format_user_status(status):
-    status_format = {
-        0: 'Inactive',
-        1: 'Free',
-        2: 'Paid'
-    }
-    return status_format[status]
+    return constants.USER_STATUS[status]
 
 
 def format_user_date(user_date):
@@ -121,18 +111,30 @@ def create_new_user(email, pw_hash):
     cur.execute("""
         insert into users (user_email, user_pw, user_role, user_status)
         values (%s, %s, %s, %s)
-        """, (email, pw_hash, constants.USER, constants.NEW)
+        """, (email, pw_hash, constants.USER, constants.FREE)
     )
     new_user_id = cur.lastrowid
-
-    #TODO this needs to be dynamic and optional obviously
-    cur.execute(
-        'insert into user_properties values (%s, %s, %s, %s)', (
-        None, new_user_id, 'user_tz', 'US/Eastern'
-    ))
-    new_up_id = cur.lastrowid
     db.commit()
     return new_user_id
+
+
+def add_new_user_timezone(new_user_id, user_tz):
+    """Adds a timezone to the database as a user_property.
+    """
+    if query_db("""
+            select up_id from user_properties
+            where up_user=%s and up_key=%s
+            """, (new_user_id, 'user_tz'), one=True):
+        return False
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        'insert into user_properties values (%s, %s, %s, %s)', (
+        None, new_user_id, 'user_tz', user_tz
+    ))
+    new_tz_id = cur.lastrowid
+    db.commit()
+    return new_tz_id
 
 
 def generate_verification_code():
@@ -143,9 +145,11 @@ def generate_verification_code():
     return new_ver_code
 
 
-def process_phone_verification(phone_num, ver_code):
-    sched.send_message(
-        'Welcome to AlarmAway! Verification code: %s' % ver_code, phone_num)
+def send_phone_verification(phone_num, ver_code):
+    sched.send_message((
+        'Welcome to AlarmAway! Verification code: %s' % ver_code),
+        phone_num
+    )
 
 def create_new_phone(owner, num, verified=False):
     """Adds a new phone number to the database.
@@ -165,29 +169,30 @@ def create_new_phone(owner, num, verified=False):
 
 
 def get_user_phones(user_id, verified=False):
-    """Returns a list of all user_phone objects currently in the program's
-    database, for which the phone's owner is the supplied user_id. The
-    second argument allows specification of whether to return all phone
-    records found, or only the verified ones.
+    """Helper method that returns a list of all user_phone objects currently
+    in the program's database, for which the phone's owner is the supplied
+    user_id. The second argument allows specification of whether to return all
+    phone records found, or only the verified ones.
     """
-    ph = (
-        query_db("""
+    if verified:
+        phones = query_db("""
             select phone_id, phone_number from user_phones
             where phone_owner=%s and phone_verified=%s
-            """, (user_id, 1)
-        ) if verified else query_db("""
-            select phone_id, phone_number, phone_verified from user_phones
-            where phone_owner=%s
+            """, (user_id, 1
+        ))
+    else:
+        phones = query_db("""
+            select phone_id, phone_number, phone_verified
+            from user_phones where phone_owner=%s
             """, user_id
         )
-    )
-    return ph
+    return phones
 
 
 def get_phone_number(request_phone_id):
     rv = query_db('select phone_number from user_phones where phone_id=%s',
         request_phone_id, one=True)
-    if rv is not None:
+    if rv:
         return rv['phone_number']
     return None
 
@@ -205,16 +210,18 @@ def remove_user_phone(user_id, phone_id):
 
 def get_user_alarms(user_id, active_only=True):
     if active_only:
-        rv = query_db("""
+        alarms = query_db("""
             select alarm_id, alarm_phone, alarm_time, alarm_active from alarms
             where alarm_owner=%s and alarm_active=%s
-            """, (user_id, 1))
+            """, (user_id, 1
+        ))
     else:
-        rv = query_db("""
+        alarms = query_db("""
             select alarm_id, alarm_phone, alarm_time, alarm_active from alarms
             where alarm_owner=%s
-            """, user_id)
-    return rv
+            """, user_id
+        )
+    return alarms
 
 
 def get_alarm_status(alarm_id):
@@ -276,7 +283,7 @@ def set_user_alarm(alarm_id):
     new_event_id = create_alarm_event(alarm_info['alarm_id'])
     if new_event_id and sched.set_alarm(
             new_event_id,
-            next_run_time(get_alarm_time(alarm_info['alarm_time'])),
+            get_next_run_datetime(get_alarm_time(alarm_info['alarm_time'])),
             get_phone_number(alarm_info['alarm_phone'])):
         app.logger.debug(
             'new alarm scheduled -- alarm_id: %s, event_id: %s' % (
@@ -293,8 +300,8 @@ def unset_user_alarm(alarm_id):
         """, (alarm_id, 1), one=True
     )
     if not cur_event:
-        app.logger.debug('unset_user_alarm FAIL -- no event for alarm_id %s' %
-            alarm_id)
+        app.logger.debug(
+            'unset_user_alarm FAIL -- no event for alarm_id %s' % alarm_id)
         return False
     db = get_db()
     cur = db.cursor()
@@ -370,19 +377,12 @@ def get_alarm_time(alarm_timedelta):
 
 def alarm_is_recent(alarm_time, alarm_id):
     now = datetime.utcnow()
-    if not (now.time() > alarm_time > (now - timedelta(seconds=3600)).time()):
-        app.logger.debug(
-            'alarm_is_recent(%s) - False, now: %s, then: %s, alarm: %s' % (
-            alarm_id, now.time(), (now - timedelta(seconds=3600)).time(),
-            alarm_time)
-        )
+    if not (now.time() > alarm_time > (now - timedelta(seconds=7200)).time()):
         return False
-    app.logger.debug('alarm_is_recent(%s) - True, now: %s, alarm: %s' % (
-        alarm_id, now.time(), alarm_time))
     return True
 
 
-def next_run_time(alarm_time):
+def get_next_run_datetime(alarm_time):
     now = datetime.utcnow()
     if alarm_time > now.time():
         run_time = datetime(
@@ -407,6 +407,8 @@ def validate_alarm_time(alarm_time):
 
 @app.route('/')
 def home():
+    if 'user_id' in session:
+        return redirect(url_for('user_home'))
     return render_template('welcome.html')
 
 
@@ -425,35 +427,15 @@ def pre_registration():
         error = ('Sorry, that phone number is already registered.')
     else:
         uv_code = generate_verification_code()
-        process_phone_verification(input_phone, uv_code)
+        send_phone_verification(input_phone, uv_code)
+        session.pop('uv_code', None)
         session['uv_code'] = uv_code
+        session.pop('user_alarm', None)
         session['user_alarm'] = input_alarm
+        session.pop('user_phone', None)
         session['user_phone'] = input_phone
         return redirect(url_for('registration'))
     return render_template('welcome.html', error=error)
-
-
-@app.route('/alarm/respond/<from_number>')
-def alarm_response(from_number):
-    phone_id = query_db(
-        'select phone_id from user_phones where phone_number=%s',
-        from_number, one=True
-    )
-    related_alarms = query_db("""
-        select alarm_id, alarm_time, alarm_active from alarms
-        where alarm_phone=%s
-        """, phone_id['phone_id']
-    )
-    recent_alarms = [alarm for alarm in related_alarms
-        if alarm_is_recent(get_alarm_time(alarm['alarm_time']), alarm['alarm_id'])]
-    for alarm in recent_alarms:
-        if unset_user_alarm(alarm['alarm_id']):
-            flash("Alarm off, don't forget to turn it back on when you need it!")
-        if alarm['alarm_active']:
-            set_user_alarm(alarm['alarm_id'])
-            flash('Alarm off for the day, Talk to ya tomorrow!')
-    return redirect(url_for('user_home'))
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def registration():
@@ -466,15 +448,16 @@ def registration():
     if request.method == 'POST':
         if not phone_prev_present:
             user_phone = validate_phone_number(request.form['user_phone'])
-            if not is_number_unique(user_phone):
-                return render_template(
-                    'register-new.html',
-                    error='That phone number is already associated with\
-                    an Alarm Away account.')
+            if not user_phone:
+                return render_template('register-new.html',
+                    error = "Please enter a valid phone number")
+            elif not is_number_unique(user_phone):
+                return render_template('register-new.html',
+                    error='Number already associated with an account.')
             else:
                 uv_code = generate_verification_code()
                 session['uv_code'] = uv_code
-                process_phone_verification(user_phone, uv_code)
+                send_phone_verification(user_phone, uv_code)
         else:
             user_phone = session.pop('user_phone')
         user_email = validate_email(request.form['user_email'])
@@ -483,6 +466,7 @@ def registration():
             # All input data is sanitized and validated. Create user and phone
             new_user_id = create_new_user(user_email,
                 generate_password_hash(user_password))
+            new_tz_id = add_new_user_timezone(new_user_id, 'US/Eastern')
             new_phone_id = create_new_phone(new_user_id, user_phone)
             session['user_id'] = new_user_id
             return redirect(url_for('user_home'))
@@ -520,8 +504,10 @@ def user_home():
         user_id, 'user_tz'), one=True
     )
     for alarm in user_alarms:
-        alarm['alarm_time'] = get_alarm_time(alarm['alarm_time'])
-        alarm['local_time'] = get_local(alarm['alarm_time'],user_tz['up_value'])
+        alarm['local_time'] = get_local(
+            get_alarm_time(alarm['alarm_time']),
+            user_tz['up_value']
+        )
         alarm['alarm_status'] = get_alarm_status(alarm['alarm_id'])
         alarm['phone_number'] = get_phone_number(alarm['alarm_phone'])
     return render_template(
@@ -562,7 +548,6 @@ def login():
 
 @app.route('/logout')
 def logout():
-    # Should we check/clear these others?
     session.pop('uv_code', None)
     session.pop('user_alarm', None)
     session.pop('user_phone', None)
@@ -577,7 +562,7 @@ def admin_panel():
         return redirect(url_for('login'))
     elif session['user_id'] != 1:
         flash('You do not have the proper credentials to view this page.')
-        return redirect(url_for('home'))
+        return redirect(url_for('user_home'))
 
     users = query_db('select * from users')
     alarms = query_db('select * from alarms')
@@ -611,46 +596,9 @@ def new_alarm():
                 user_id, request.form['phone'], input_alarm, active=True)
             flash('Awesome! You set an alarm!')
             return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
-    user_phones = get_user_phones(session['user_id'])
+    user_phones = get_user_phones(user_id)
     return render_template('add-new-alarm.html', error=error,
         user_phones=user_phones)
-
-
-@app.route('/alarm/update/<alarm_id>', methods=['GET', 'POST'])
-def update_alarm(alarm_id):
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
-        return redirect(url_for('login'))
-    error = None
-    user_id = session['user_id']
-    if not verify_alarm_ownership(user_id, alarm_id):
-        flash('Error updating alarm. Can only modify your own alarms.')
-        return redirect(url_for('user_home'))
-
-    current_alarm = query_db("""
-        select alarm_id, alarm_time, alarm_phone from alarms
-        where alarm_id=%s and alarm_owner=%s
-        """, (alarm_id, user_id), one=True
-    )
-    user_phones = get_user_phones(user_id)
-    current_alarm['phone_number'] = get_phone_number(
-        current_alarm['alarm_phone'])
-    if request.method == 'POST':
-        input_alarm = validate_alarm_time(request.form['time'])
-        input_phone = request.form['phone']
-        if not input_alarm:
-            error = 'Sorry, an error has occured. Please try again.'
-        elif (input_alarm == current_alarm['alarm_time']) and (
-                input_phone == current_alarm['alarm_phone']):
-            return redirect(url_for('user_home'))
-        elif not update_user_alarm(alarm_id,
-                alarm_time=input_alarm, alarm_phone=request.form['phone']):
-            error = 'An error has occured. Alarm not updated, pelase try again'
-        else:
-            flash('Alarm successfully updated.')
-            return redirect(url_for('user_home'))
-    return render_template('update-alarm.html', error=error,
-        user_phones=user_phones, current_alarm=current_alarm)
 
 
 @app.route('/alarm/remove/<alarm_id>')
@@ -697,6 +645,65 @@ def unset_alarm(alarm_id):
     return redirect(url_for('user_home'))
 
 
+@app.route('/alarm/update/<alarm_id>', methods=['GET', 'POST'])
+def update_alarm(alarm_id):
+    if not 'user_id' in session:
+        flash('You must be logged in to view this page.')
+        return redirect(url_for('login'))
+    error = None
+    user_id = session['user_id']
+    if not verify_alarm_ownership(user_id, alarm_id):
+        flash('Error updating alarm. Can only modify your own alarms.')
+        return redirect(url_for('user_home'))
+
+    current_alarm = query_db("""
+        select alarm_id, alarm_time, alarm_phone from alarms
+        where alarm_id=%s and alarm_owner=%s
+        """, (alarm_id, user_id), one=True
+    )
+    user_phones = get_user_phones(user_id)
+    current_alarm['phone_number'] = get_phone_number(
+        current_alarm['alarm_phone'])
+    if request.method == 'POST':
+        input_alarm = validate_alarm_time(request.form['time'])
+        input_phone = request.form['phone']
+        if not input_alarm:
+            error = 'Sorry, an error has occured. Please try again.'
+        elif (input_alarm == current_alarm['alarm_time']) and (
+                input_phone == current_alarm['alarm_phone']):
+            return redirect(url_for('user_home'))
+        elif not update_user_alarm(alarm_id,
+                alarm_time=input_alarm, alarm_phone=request.form['phone']):
+            error = 'An error has occured. Alarm not updated, pelase try again'
+        else:
+            flash('Alarm successfully updated.')
+            return redirect(url_for('user_home'))
+    return render_template('update-alarm.html', error=error,
+        user_phones=user_phones, current_alarm=current_alarm)
+
+
+@app.route('/alarm/respond/<from_number>')
+def alarm_response(from_number):
+    phone_id = query_db(
+        'select phone_id from user_phones where phone_number=%s',
+        from_number, one=True
+    )
+    related_alarms = query_db("""
+        select alarm_id, alarm_time, alarm_active from alarms
+        where alarm_phone=%s
+        """, phone_id['phone_id']
+    )
+    recent_alarms = [alarm for alarm in related_alarms
+        if alarm_is_recent(get_alarm_time(alarm['alarm_time']), alarm['alarm_id'])]
+    for alarm in recent_alarms:
+        if unset_user_alarm(alarm['alarm_id']):
+            flash("Alarm off, don't forget to turn it back on when you need it!")
+        if alarm['alarm_active']:
+            set_user_alarm(alarm['alarm_id'])
+            flash('Alarm off for the day, Talk to ya tomorrow!')
+    return redirect(url_for('user_home'))
+
+
 @app.route('/phone/new', methods=['GET', 'POST'])
 def new_phone():
     if not 'user_id' in session:
@@ -718,7 +725,7 @@ def new_phone():
         else:
             uv_code = generate_verification_code()
             session['uv_code'] = uv_code
-            process_phone_verification(user_phone, uv_code)
+            send_phone_verification(user_phone, uv_code)
             if create_new_phone(session['user_id'], user_phone):
                 flash('Successfully added new phone!')
                 return redirect(url_for('user_home'))
