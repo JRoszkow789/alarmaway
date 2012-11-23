@@ -1,10 +1,4 @@
 set foreign_key_checks = 0;
-drop table if exists job_batch;
-drop table if exists job_log;
-drop table if exists aa_things;
-drop table if exists user_properties;
-drop table if exists alarm_calls;
-drop table if exists alarm_call;
 drop table if exists users;
 create table users (
 	user_id int unsigned not null auto_increment,
@@ -86,4 +80,11 @@ add constraint fk_up_user
 foreign key (up_user) references users(user_id)
 on update cascade
 on delete cascade;
+drop table if exists job_index;
+create table job_index (
+	job_id int unsigned not null auto_increment,
+	job_parent int unsigned not null,
+	job_task_id varchar(60) not null,
+	primary key (job_id)
+);
 set foreign_key_checks = 1;
