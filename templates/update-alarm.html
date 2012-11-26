@@ -20,6 +20,13 @@
 {% block content %}
 <div class="row well well-large major-container">
   <div class="set-alarm-container faded-insert">
+  {% if error %}
+  <div class="alert alert-error t-left">
+    <button class="btn close" type="button" data-dismiss="alert">x</button>
+    <h4>Uh oh, an error occured...</h4>
+    <p>{{ error }}</p>
+  </div>
+  {% endif %}
     <form class="form-horizontal" method="post"
         action="{{ url_for('update_alarm', alarm_id=current_alarm.alarm_id) }}">
       <div class="control-group">
@@ -150,7 +157,7 @@
           </select>
         </div>
         <span class="help-block">
-          Currently set to {{ current_alarm.alarm_time }}
+          Currently set to {{ current_alarm.local_time|format_alarm_time }}
         </span>
       </div>
       <div class="control-group">
