@@ -110,10 +110,9 @@
           </a>
           {% endif %}
           <p class="t-center">
-            <strong>Or
-            <a href="{{ url_for('update_alarm', alarm_id=alarm.alarm_id) }}">
-              modify
-            </a>this alarm</strong>
+            <a href="{{ url_for('remove_alarm', alarm_id=alarm.alarm_id) }}">
+              <span class="text-error"><strong><i class="icon-trash"></i> Remove</strong></span>
+            </a>this alarm
           </p>
         </div>
       {% else %}
