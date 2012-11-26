@@ -1,4 +1,3 @@
-celeryconfig.*
 aa_worker_state
 *.log
 run_server.*
