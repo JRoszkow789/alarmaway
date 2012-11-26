@@ -316,11 +316,6 @@ def unset_user_alarm(alarm_id):
     return False
 
 
-def update_user_alarm(alarm_id, alarm_time, alarm_phone):
-    #TODO returns t/f indicating success or not
-    return True
-
-
 def create_alarm_event(alarm_id):
     # Needs to check that it is/will be the only existing active event for
     # the corresponding alarm. Returns the new event's event_id upon success
@@ -626,6 +621,8 @@ def remove_alarm(alarm_id):
         return redirect(url_for('login'))
     elif not verify_alarm_ownership(session['user_id'], alarm_id):
         flash('Error removing alarm. You can only delete your own alarms!')
+    elif get_alarm_status(alarm_id):
+        flash('That alarm is currently active, you need to unset it first.')
     elif not remove_user_alarm(alarm_id):
         flash('Error removing alarm. Please try again.')
     else:
@@ -673,52 +670,7 @@ def update_alarm(alarm_id):
     if not verify_alarm_ownership(user_id, alarm_id):
         flash('Error updating alarm. Can only modify your own alarms.')
         return redirect(url_for('user_home'))
-
-    current_alarm = query_db("""
-        select alarm_id, alarm_time, alarm_phone from alarms
-        where alarm_id=%s and alarm_owner=%s
-        """, (alarm_id, user_id), one=True
-    )
-    user_phones = get_user_phones(user_id)
-    current_alarm['phone_number'] = get_phone_number(
-        current_alarm['alarm_phone'])
-    if request.method == 'POST':
-        input_alarm = validate_alarm_time(request.form['time'])
-        input_phone = request.form['phone']
-        if not input_alarm:
-            error = 'Sorry, an error has occured. Please try again.'
-        elif (input_alarm == current_alarm['alarm_time']) and (
-                input_phone == current_alarm['alarm_phone']):
-            return redirect(url_for('user_home'))
-        elif not update_user_alarm(alarm_id,
-                alarm_time=input_alarm, alarm_phone=request.form['phone']):
-            error = 'An error has occured. Alarm not updated, pelase try again'
-        else:
-            flash('Alarm successfully updated.')
-            return redirect(url_for('user_home'))
-    return render_template('update-alarm.html', error=error,
-        user_phones=user_phones, current_alarm=current_alarm)
-
-
-@app.route('/alarm/respond/<from_number>')
-def alarm_response(from_number):
-    phone_id = query_db(
-        'select phone_id from user_phones where phone_number=%s',
-        from_number, one=True
-    )
-    related_alarms = query_db("""
-        select alarm_id, alarm_time, alarm_active from alarms
-        where alarm_phone=%s
-        """, phone_id['phone_id']
-    )
-    recent_alarms = [alarm for alarm in related_alarms
-        if alarm_is_recent(get_alarm_time(alarm['alarm_time']), alarm['alarm_id'])]
-    for alarm in recent_alarms:
-        if unset_user_alarm(alarm['alarm_id']):
-            flash("Alarm off, don't forget to turn it back on when you need it!")
-        if alarm['alarm_active']:
-            set_user_alarm(alarm['alarm_id'])
-            flash('Alarm off for the day, Talk to ya tomorrow!')
+    flash('Page still under construction')
     return redirect(url_for('user_home'))
 
 
