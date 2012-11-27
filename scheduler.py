@@ -47,10 +47,10 @@ class AlarmScheduler:
             msg_time = alarm_time + timedelta(seconds=(240*(len(alarm_asyncs))))
             if typ == 'call':
                 alarm_asyncs.append(send_user_call.apply_async(
-                    args=(msg, phone_number), eta=msg_time))
+                    args=(msg, phone_number), eta=msg_time, expires=msg_time+timedelta(seconds=90)))
             else:
                 alarm_asyncs.append(send_user_text.apply_async(
-                    args=(msg, phone_number), eta=msg_time))
+                    args=(msg, phone_number), eta=msg_time, expires=msg_time+timedelta(seconds=120)))
 
         with closing(get_db()) as db:
             cur = db.cursor()
@@ -86,3 +86,7 @@ def send_user_text(msg, number):
     comm_client = aa_comm.AlarmAwayTwilioClient(
         COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER)
     comm_client.send_sms(number, msg)
+
+@celery.task
+def test_add(x, y):
+    return x + y
