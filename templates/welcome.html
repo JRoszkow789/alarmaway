@@ -31,20 +31,19 @@
 {% block content %}
 <div class="row well well-large major-container">
   <div class="row zero-row">
+  {% if error %}
+    <div class="alert alert-error">
+      <h4>Woops, something happened</h4>
+      {{ error }}
+    </div>
+  {% endif %}
     <div class="span5">
       <img src="{{ url_for('static', filename='img/alarm-clock-full.png') }}"
         alt="How AlarmAway Works" class="img-rounded" />
     </div>
     <div class="span6 t-center faded-insert">
       <h3 class="header-dark">In just a few seconds, you could change the way you start your day</h3>
-      {% if error %}
-        <div class="alert alert-error t-left">
-          <h4>Woops, something happened</h4>
-          {{ error }}
-        </div>
-      {% endif %}
-      <form method="post" class="form-horizontal"
-            action="{{ url_for('pre_registration') }}">
+      <form method="post" class="form-horizontal" action="{{ url_for('pre_registration') }}">
         <div class="control-group">
           <label class="control-label" for="timezone">
             <strong>
@@ -54,7 +53,11 @@
           <div class="controls">
             <select name="timezone" id="timezone">
               <option>Select a timezone</option>
-              <option value="1">US/Eastern</option>
+              {% for tz in tz_list %}
+              <option value="{{ tz }}">{{ tz }}</option>
+              {% else %}
+              <option value="US/Eastern">US/Eastern</option>
+              {% endfor %}
             </select>
           </div>
         </div>

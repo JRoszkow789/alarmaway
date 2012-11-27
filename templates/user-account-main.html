@@ -56,6 +56,17 @@
     </div>
   </div>
 {% endif %}
+{% with flashes = get_flashed_messages() %}
+  {% if flashes %}
+    {% for flash_msg in flashes %}
+    <div class="alert alert-error">
+      <button type="button" data-dismiss="alert" class="close">x</button>
+      <h4>An error has occurred...</h4>
+      <p>{{ flash_msg }}</p>
+    </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 <div class="tabbable">
   <div class="nav-tab-container">
     <ul class="nav nav-tabs t-center">
