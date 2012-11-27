@@ -9,32 +9,12 @@
      href="{{url_for('static', filename='css/cerulean.css')}}" />
 {% block preheader %}{% endblock %}
 <style type="text/css">
-  html, body {
-    height: 100%;
-  }
-  body {
-    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
-  }
-  #wrap {
-    min-height: 100%;
-    height: auto !important;
-    height: 100%;
-    margin: 0 auto -50px;
-  }
-  #push,
   #footer {
     height: 50px;
   }
-  #footer {
-    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
-  }
-  .alarm-hero {
-    background:url({{ url_for('static', filename='img/grey.png') }});
-    text-align: center;
-  }
   .aa-nav {
     margin-bottom: 0;
-    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
+    background: inherit;
   }
   .aa-nav-inner {
     background: inherit;
@@ -64,31 +44,10 @@
     margin-right: auto;
     text-align: center;
   }
-  .flasher-row {
-    margin-top: 40px;
-    margin-bottom: 40px;
-  }
-  .major-container {
-    margin: 0 auto 60px auto;
-  }
-  .zero-row {
-    margin-left: 0;
-  }
-  .faded-insert {
-    background: #D9EDF7;
-  }
-  .header-dark {
-    color: #393939 !important;
-  }
-  .header-blue {
-    color: #317EAC !important;
-  }
-</style>
+  </style>
 </head>
 
-<body>
-<!-- Page and content wrapper for the fixed-to-bottom nav bar. -->
-<div id="wrap">
+<body class="bg-dark-grid">
 
 <!-- Top Meta-Nav bar. Can be overridden if necessary with block meta_nav. -->
 {% block meta_nav %}
@@ -111,7 +70,7 @@
 <!-- Main 'Hero Unit' header. Can be customized with block's 'hero_title' and
      'hero_subtitle', respectively. Can also be extended beneath the titling
      with block hero_extras.-->
-  <div class="hero-unit alarm-hero">
+  <div class="hero-unit bg-light-grid t-center">
     <div class="hero-content">
       <h1>
       {% block hero_title %}
@@ -134,10 +93,6 @@
     {% block content %}{% endblock %}
   </div>
 <!-- End Main Content Area -->
-
-<!-- Manage page and placement for Footer Area. -->
-  <div id="push"></div>
-</div>
 
 <!-- Begin Footer Navbar -->
 <div id="footer">

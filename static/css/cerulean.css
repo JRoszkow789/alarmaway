@@ -3,6 +3,13 @@
 .t-center{text-align:center;}
 .t-left{text-align:left;}
 .t-right{text-align:right;}
+.bg-light-grid{background:url("../img/grey.png") !important;}
+.bg-dark-grid{background:url("../img/wild_oliva.png") !important;}
+.header-dark{color: #393939 !important;}
+.header-blue{color: #317EAC !important;}
+.faded-insert{background: #D9EDF7;}
+.major-container{margin: 0 auto 60px auto !important;}
+.zero-row {margin-left: 0 !important;}
 article,aside,details,figcaption,figure,footer,header,hgroup,nav,section{display:block;}
 audio,canvas,video{display:inline-block;*display:inline;*zoom:1;}
 audio:not([controls]){display:none;}
