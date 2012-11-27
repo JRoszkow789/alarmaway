@@ -399,6 +399,10 @@ def validate_alarm_time(alarm_time):
     return None
 
 
+def get_timezones():
+    return pytz.country_timezones('US')
+
+
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template('404.html'), 404
@@ -414,13 +418,11 @@ def server_error(error):
 def home():
     if 'user_id' in session:
         return redirect(url_for('user_home'))
-    return render_template('welcome.html')
+    return render_template('welcome.html', tz_list=get_timezones())
 
 
-@app.route('/get-started', methods=['GET', 'POST'])
+@app.route('/get-started', methods=['POST'])
 def pre_registration():
-    if request.method != 'POST':
-        return redirect(url_for('registration'))
     error = None
     input_tz = request.form['timezone']
     input_phone = validate_phone_number(request.form['phone'])
@@ -475,8 +477,7 @@ def registration():
             # All input data is sanitized and validated. Create user and phone
             new_user_id = create_new_user(user_email,
                 generate_password_hash(user_password))
-            new_user_tz = 'US/Eastern' if user_tz == '0' else None
-            if not add_new_user_timezone(new_user_id, new_user_tz):
+            if not add_new_user_timezone(new_user_id, user_tz):
                 flash('Error adding timezone, please try again')
             else:
                 session.pop('user_tz', None)
@@ -491,7 +492,7 @@ def registration():
             error = 'That email address is already registered with Alarm Away.'
     target_template = (
         'register-cont.html' if phone_prev_present else 'register-new.html')
-    return render_template(target_template, error=error)
+    return render_template(target_template, tz_list=get_timezones(), error=error)
 
 
 @app.route('/user')
@@ -596,8 +597,12 @@ def new_alarm():
     user_id = session['user_id']
     if request.method == 'POST':
         input_alarm = validate_alarm_time(request.form['time'])
-        if input_alarm is None:
-            error = 'Uh-oh, an error occured. Please try again.'
+        input_phone = request.form['phone']
+        app.logger.debug('input_phone: %s' % input_phone)
+        if not input_alarm:
+            flash('We have encountered an error processing your alarm. Please try again.')
+        elif not input_phone:
+            flash('You must select a phone number to be associated with this alarm.')
         else:
             user_tz=query_db("""
                 select up_value from user_properties
@@ -606,7 +611,7 @@ def new_alarm():
             )
             input_alarm = get_utc(input_alarm, user_tz['up_value'])
             new_alarm_id = create_new_alarm(
-                user_id, request.form['phone'], input_alarm, active=True)
+                user_id, input_phone, input_alarm, active=True)
             flash('Awesome! You set an alarm!')
             return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
     user_phones = get_user_phones(user_id)

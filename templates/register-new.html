@@ -66,7 +66,11 @@
       </label>
       <select name="user_tz">
         <option>Select your timezone</option>
-        <option value="0">US/Eastern</option>
+        {% for tz in tz_list %}
+        <option value="{{ tz }}">{{ tz }}</option>
+        {% else %}
+        <option value="US/Eastern">US/Eastern</option>
+        {% endfor %}
       </select>
       <span class="help-block">
         Just to make sure we don't accidentally wake you up at 2 A.M!
