@@ -1,3 +1,5 @@
+fabfile.py
+host-files/*
 email_config.py
 *.wsgi
 aa_worker_state
