@@ -471,6 +471,7 @@ def registration():
                 send_phone_verification(user_phone, uv_code)
         else:
             user_phone = session.pop('user_phone')
+            user_tz = session.pop('user_tz', None)
         user_email = validate_email(request.form['user_email'])
         user_password = request.form['user_password']
         if user_email and user_password and is_email_unique(user_email):
