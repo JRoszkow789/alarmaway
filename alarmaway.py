@@ -370,7 +370,7 @@ def get_alarm_time(alarm_timedelta):
     return (datetime.min + alarm_timedelta).time()
 
 
-def alarm_is_recent(alarm_time, alarm_id):
+def alarm_is_recent(alarm_time):
     now = datetime.utcnow()
     if not (now.time() > alarm_time > (now - timedelta(seconds=7200)).time()):
         return False
@@ -427,7 +427,7 @@ def get_recent_alarms(phone_id):
     ]
     return [
         alarm['alarm_id'] for alarm in cur_alarms if alarm_is_recent(
-        alarm['alarm_time']
+        get_alarm_time(alarm['alarm_time'])
     )]
 
 
