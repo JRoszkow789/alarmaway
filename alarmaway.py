@@ -409,7 +409,7 @@ def get_phone_id(phone_num):
         'select phone_id from user_phones where phone_number=%s' % phone_num,
         one=True
     )
-    return phone_info['phone_number'] if phone_info else None
+    return phone_info['phone_id'] if phone_info else None
 
 
 def generate_join_message(new_number):
