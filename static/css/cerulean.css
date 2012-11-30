@@ -7,7 +7,7 @@
 .bg-dark-grid{background:url("../img/wild_oliva.png") !important;}
 .header-dark{color: #393939 !important;}
 .header-blue{color: #317EAC !important;}
-.faded-insert{background: #D9EDF7;}
+.faded-insert{background: #D9EDF7; !important}
 .major-container{margin: 0 auto 60px auto !important;}
 .zero-row {margin-left: 0 !important;}
 article,aside,details,figcaption,figure,footer,header,hgroup,nav,section{display:block;}
