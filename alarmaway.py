@@ -6,6 +6,7 @@ import MySQLdb.cursors
 import logging
 import random
 from datetime import datetime, timedelta, time
+import twilio.twiml
 import pytz
 import scheduler
 import re
@@ -403,6 +404,81 @@ def get_timezones():
     return pytz.country_timezones('US')
 
 
+def get_phone_id(phone_num):
+    phone_info = query_db(
+        'select phone_id from user_phones where phone_number=%s' % phone_num,
+        one=True
+    )
+    return phone_info['phone_number'] if phone_info else None
+
+
+def generate_join_message(new_number):
+    sched.send_message(
+        'Welcome to AlarmAway! To complete registration, please visit %s' % (
+        'JoeRoszkowski.com'), new_number
+    )
+
+
+def get_recent_alarms(phone_id):
+    cur_alarms = [
+        alarm for alarm in query_db(
+        'select alarm_id, alarm_time from alarms where alarm_phone=%s' % (
+        phone_id)) if get_alarm_status(alarm['alarm_id'])
+    ]
+    return [
+        alarm['alarm_id'] for alarm in cur_alarms if alarm_is_recent(
+        alarm['alarm_time']
+    )]
+
+
+def turn_off_alarm(alarm_id):
+    cur_event = query_db("""
+        select event_id, event_owner, event_status from alarm_events
+        where event_owner=%s and event_status=%s
+        """, (alarm_id, 1), one=True
+    )
+    if not cur_event:
+        app.logger.debug(
+            'turn_off_alarm FAIL -- no event for alarm_id %s' % alarm_id
+        )
+        return
+    db = get_db()
+    cur = db.cursor()
+    if not cur.execute("""
+            update alarm_events set event_end=%s, event_status=%s
+            where event_id=%s
+            """, (datetime.utcnow(), 0, cur_event['event_id'])):
+        app.logger.warn('turn_off_alarm update db unsuccessful.')
+    else:
+        db.commit()
+        sched.unset_alarm(cur_event['event_id'])
+        return True
+    return False
+
+
+def schedule_alarm(alarm_id):
+    alarm_info = query_db("""
+        select alarm_id, alarm_phone, alarm_time from alarms where alarm_id=%s
+        """, alarm_id, one=True
+    )
+    new_event_id = create_alarm_event(alarm_info['alarm_id'])
+    if new_event_id and sched.set_alarm(
+            new_event_id,
+            get_next_run_datetime(get_alarm_time(alarm_info['alarm_time'])),
+            get_phone_number(alarm_info['alarm_phone'])):
+        app.logger.debug(
+            'new alarm scheduled -- alarm_id: %s, event_id: %s' % (
+            alarm_info['alarm_id'], new_event_id
+        ))
+        return True
+    elif new_event_id:
+        app.logger.warn(
+            'Error in scheduling new alarm. new_event_id: %s' % new_event_id
+        )
+    return False
+
+
+
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template('404.html'), 404
@@ -420,6 +496,25 @@ def home():
         return redirect(url_for('user_home'))
     return render_template('welcome.html', tz_list=get_timezones())
 
+
+@app.route('/twimlio', methods=['POST'])
+def alarm_response():
+    from_number = request.values.get('From', None)
+    from_number = from_number[2:]
+    from_id = get_phone_id(from_number)
+    if not from_id:
+        generate_join_message(new_number=from_number)
+        return
+    cur_alarms = get_recent_alarms(from_id)
+    resp_message = 'Have a nice day!'
+    for alarm in cur_alarms:
+        turn_off_alarm(alarm)
+        schedule_alarm(alarm)
+    else:
+        resp_message = 'No alarms running!'
+    resp = twilio.twiml.Response()
+    resp.sms(resp_message)
+    return str(resp)
 
 @app.route('/get-started', methods=['POST'])
 def pre_registration():
