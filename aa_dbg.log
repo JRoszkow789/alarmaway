@@ -1,0 +1,56 @@
+INFO:werkzeug: * Running on http://0.0.0.0:5000/
+INFO:werkzeug: * Restarting with reloader
+INFO:werkzeug: * Running on http://0.0.0.0:5000/
+INFO:werkzeug: * Restarting with reloader
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /static/css/cerulean.css HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /static/js/bootstrap.min.js HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /_debug_toolbar/static/js/jquery.js HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /_debug_toolbar/static/js/jquery.tablesorter.js HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /_debug_toolbar/static/js/toolbar.js HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /static/img/alarm-clock-full.png HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /static/img/wild_oliva.png HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /_debug_toolbar/static/css/toolbar.css?0.9856234369799495 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /static/img/grey.png HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:57] "GET /_debug_toolbar/static/img/djdt_vertical.png HTTP/1.1" 304 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:19:58] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:20:26] "GET /_debug_toolbar/static/img/tick-red.png HTTP/1.1" 304 -
+INFO:werkzeug: * Detected change in '/home/joe/projects/alarmaway/alarmaway.py', reloading
+INFO:werkzeug: * Restarting with reloader
+INFO:werkzeug: * Detected change in 'run_server.py', reloading
+INFO:werkzeug: * Restarting with reloader
+INFO:werkzeug: * Detected change in '/home/joe/projects/alarmaway/alarmaway.py', reloading
+INFO:werkzeug: * Restarting with reloader
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:25] "GET /register HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:25] "GET /_debug_toolbar/static/css/toolbar.css?0.6435404347721487 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:25] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:27] "POST /register HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:27] "GET /_debug_toolbar/static/css/toolbar.css?0.024464216781780124 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:27] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:30] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:30] "GET /_debug_toolbar/static/css/toolbar.css?0.15237357304431498 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:30] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:31] "POST /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:31] "GET /_debug_toolbar/static/css/toolbar.css?0.8528190609067678 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:31] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:33] "GET /user/view HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:33] "GET /_debug_toolbar/static/css/toolbar.css?0.4601584260817617 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:33] "GET /favicon.ico HTTP/1.1" 404 -
+DEBUG:amqplib:Start from server, version: 8.0, properties: {u'information': u'Licensed under the MPL.  See http://www.rabbitmq.com/', u'product': u'RabbitMQ', u'copyright': u'Copyright (C) 2007-2011 VMware, Inc.', u'capabilities': {}, u'platform': u'Erlang/OTP', u'version': u'2.7.1'}, mechanisms: [u'PLAIN', u'AMQPLAIN'], locales: [u'en_US']
+DEBUG:amqplib:Open OK! known_hosts []
+DEBUG:amqplib:using channel_id: 1
+DEBUG:amqplib:Channel open
+DEBUG:alarmaway:new alarm scheduled -- alarm_id: 1, event_id: 2
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:35] "GET /alarm/set/1 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:36] "GET /_debug_toolbar/static/css/toolbar.css?0.6145366246346384 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:40:36] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:00] "GET /user/view HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:00] "GET /_debug_toolbar/static/css/toolbar.css?0.525153923779726 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:00] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:39] "GET /alarm/unset/1 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:39] "GET /_debug_toolbar/static/css/toolbar.css?0.3046417599543929 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:39] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:41] "GET /user/view HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:41] "GET /_debug_toolbar/static/css/toolbar.css?0.7770364829339087 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [23/Nov/2012 14:41:41] "GET /favicon.ico HTTP/1.1" 404 -
+INFO:werkzeug: * Detected change in 'run_server.py', reloading
