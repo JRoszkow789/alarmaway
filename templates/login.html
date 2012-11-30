@@ -7,9 +7,6 @@
     margin-bottom: 20px;
   }
   .form-signin {
-    max-width: 300px;
-    padding: 19px 29px 29px;
-    margin: 70px auto 20px;
   }
   .form-signin .checkbox {
     margin-bottom: 10px;
@@ -25,7 +22,9 @@
 {% endblock %}
 {% block pre_header %}{% endblock %}
 {% block hero_title %}Welcome Back{% endblock %}
-{% block hero_subtitle %}Sign in to Alarm Away and manage your morning{% endblock %}
+{% block hero_subtitle %}
+  Sign in to Alarm Away and manage your morning
+{% endblock %}
 {% block content %}
 <div class="row well well-large major-container">
   <div class="span5 t-center">
@@ -37,25 +36,25 @@
     <h3>Waking Up is Hard</h3>
     <h3>With Alarm Away, it doesnt have to be.</h3>
     <h4>Dont Have An Account?</h4>
-    <p class="lead">Signing up for Alarm Away is
-      <br /><span class="header-dark"><strong>
-        Fast, Easy and Free.</strong></span>
+    <p class="lead">Signing up for Alarm Away is<br />
+      <span class="header-dark">
+        <strong>Fast, Easy and Free.</strong>
+      </span>
     </p>
     <p>
       <a href="{{ url_for('registration') }}" class="btn btn-large btn-warning">
-        <strong>Sign Up Now &raquo;</strong></a>
+        <strong>Sign Up Now &raquo;</strong>
+      </a>
     </p>
   </div>
-  <div class="span4 offset1 well t-center faded-insert">
+  <div class="span5 offset1 t-center faded-insert">
     <form method="post" class="form-signin" action="{{ url_for('login') }}">
       <h3 class="header-dark">Existing user sign in</h3>
-      <input type="text" name='user_email' class="input-block-level"
+      <input type="text" name='user_email' class="input-xlarge"
         placeholder="Email address" />
-      <input type="password" name="user_password" class="input-block-level"
+      <input type="password" name="user_password" class="input-xlarge"
         placeholder="Password" />
-      <label class="checkbox t-left">
-        <input type="checkbox" name="remember_me" value="remember-me" /> Remember me
-      </label>
+      <br />
       <button class="btn btn-large btn-primary" type="submit">
         Sign in
       </button>
