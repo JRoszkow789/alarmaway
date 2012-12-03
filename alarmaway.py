@@ -512,14 +512,15 @@ def alarm_response():
         generate_join_message(new_number=from_number)
         return
     cur_alarms = get_recent_alarms(from_id)
-    resp_message = 'Have a nice day!'
     app.logger.debug('from_id: %s, cur_alarms: %s' % (
         from_id, (','.join([str(a) for a in cur_alarms]) if cur_alarms else
         'No Current Alarms'
     )))
-    for alarm in cur_alarms:
-        turn_off_alarm(alarm)
-        schedule_alarm(alarm)
+    if cur_alarms:
+        for alarm in cur_alarms:
+            turn_off_alarm(alarm)
+            schedule_alarm(alarm)
+        resp_message = 'Have a nice day!'
     else:
         resp_message = 'No alarms running!'
     resp = twilio.twiml.Response()
