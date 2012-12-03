@@ -425,9 +425,13 @@ def get_recent_alarms(phone_id):
         'select alarm_id, alarm_time from alarms where alarm_phone=%s' % (
         phone_id)) if get_alarm_status(alarm['alarm_id'])
     ]
+    for alarm in cur_alarms:
+        alarm['alarm_time'] = get_alarm_time(alarm['alarm_time'])
+        alarm['next_run_time'] = get_next_run_datetime(alarm['alarm_time'])
+        alarm['prev_run_time'] = alarm['next_run_time'] - timedelta(days=1)
     return [
-        alarm['alarm_id'] for alarm in cur_alarms if alarm_is_recent(
-        get_alarm_time(alarm['alarm_time'])
+        alarm['alarm_id'] for alarm in cur_alarms if (timedelta(seconds=0) < (
+        datetime.utcnow() - alarm['prev_run_time']) < timedelta(seconds=3600)
     )]
 
 
@@ -500,6 +504,8 @@ def home():
 @app.route('/twimlio', methods=['POST'])
 def alarm_response():
     from_number = request.values.get('From', None)
+    app.logger.debug('sms response received! from: %s, mod: %s' % (
+        from_number, from_number[2:]))
     from_number = from_number[2:]
     from_id = get_phone_id(from_number)
     if not from_id:
@@ -507,6 +513,8 @@ def alarm_response():
         return
     cur_alarms = get_recent_alarms(from_id)
     resp_message = 'Have a nice day!'
+    app.logger.debug('from_id: %s, cur_alarms: %s' % (
+        from_id, (','.join(cur_alarms) if cur_alarms else 'No Current Alarms')))
     for alarm in cur_alarms:
         turn_off_alarm(alarm)
         schedule_alarm(alarm)
