@@ -529,15 +529,14 @@ def alarm_response():
 
 @app.route('/get-started', methods=['POST'])
 def pre_registration():
-    error = None
     input_tz = request.form['timezone']
     input_phone = validate_phone_number(request.form['phone'])
     if not input_tz:
-        error = 'You must specify the timezone which your alarms are set for.'
+        flash('You must specify a timezone.', 'error')
     elif not input_phone:
-        error = 'Please enter a valid phone number.'
+        flash('Please enter a valid phone number.', 'error')
     elif not is_number_unique(input_phone):
-        error = ('Sorry, that phone number is already registered.')
+        flash('Sorry, that phone number is already registered.', 'info')
     else:
         uv_code = generate_verification_code()
         send_phone_verification(input_phone, uv_code)
@@ -548,14 +547,13 @@ def pre_registration():
         session['user_phone'] = input_phone
         session['user_tz'] = input_tz
         return redirect(url_for('registration'))
-    return render_template('welcome.html', error=error)
+    return render_template('welcome.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def registration():
     if 'user_id' in session:
-        flash('You are already logged in as a registered user!')
+        flash('You are already logged in as a registered user!', 'info')
         return redirect(url_for('home'))
-    error = None
     user_phone = None
     phone_prev_present = True if 'user_phone' in session else False
     if request.method == 'POST':
@@ -563,14 +561,14 @@ def registration():
             user_phone = validate_phone_number(request.form['user_phone'])
             user_tz = request.form['user_tz']
             if not user_tz:
-                return render_template('register-new.html',
-                    error="You must select a timezone")
+                flash("You must select a timezone", 'error')
+                return render_template('register-new.html')
             elif not user_phone:
-                return render_template('register-new.html',
-                    error = "Please enter a valid phone number")
+                flash("Please enter a valid phone number", 'error')
+                return render_template('register-new.html')
             elif not is_number_unique(user_phone):
-                return render_template('register-new.html',
-                    error='Number already associated with an account.')
+                flash('That number is already associated with an account.', 'error')
+                return render_template('register-new.html')
             else:
                 uv_code = generate_verification_code()
                 session['uv_code'] = uv_code
@@ -585,28 +583,28 @@ def registration():
             new_user_id = create_new_user(user_email,
                 generate_password_hash(user_password))
             if not add_new_user_timezone(new_user_id, user_tz):
-                flash('Error adding timezone, please try again')
+                flash('Error adding timezone, please try again', 'error')
             else:
                 session.pop('user_tz', None)
             new_phone_id = create_new_phone(new_user_id, user_phone)
             session['user_id'] = new_user_id
             return redirect(url_for('user_home'))
         elif not user_email:
-            error = 'Please enter a valid email address.'
+            flash('Please enter a valid email address.', 'error')
         elif not user_password:
-            error = 'Please enter a valid password.'
+            flash('Please enter a valid password.', 'error')
         else:
-            error = 'That email address is already registered with Alarm Away.'
+            flash('That email address is already registered with Alarm Away.', 'error')
     target_template = (
         'register-cont.html' if phone_prev_present else 'register-new.html')
-    return render_template(target_template, tz_list=get_timezones(), error=error)
+    return render_template(target_template, tz_list=get_timezones())
 
 
 @app.route('/user')
 @app.route('/user/view')
 def user_home():
     if not 'user_id' in session:
-        flash('Must be logged in.')
+        flash('Must be logged in.', 'info')
         return redirect(url_for('home'))
     need_verify_phone=False
     user_id = session['user_id']
@@ -643,14 +641,13 @@ def user_home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
-        flash('You are already logged in!')
+        flash('You are already logged in!', 'info')
         return redirect(url_for('home'))
-    error = None
     if request.method == 'POST':
         if not request.form['user_email']:
-            error = 'Must enter an email address'
+            flash('Must enter an email address', 'error')
         elif not request.form['user_password']:
-            error = 'Must enter a password'
+            flash('Must enter a password', 'error')
         else:
             login_email = validate_email(request.form['user_email'])
             login_pw = request.form['user_password']
@@ -658,13 +655,13 @@ def login():
                                user_email=%s''', login_email, one=True)
             if user and check_password_hash(user['user_pw'], login_pw):
                 session['user_id'] = user['user_id']
-                flash('Successfully logged in')
+                flash('Successfully logged in', 'success')
                 return redirect(url_for('user_home'))
             elif user:
-                error = "Invalid password"
+                flash("Invalid password", 'error')
             else:
-                error = "Invalid email address"
-    return render_template('login.html', error=error)
+                flash("Invalid email address", 'error')
+    return render_template('login.html')
 
 
 @app.route('/logout')
@@ -679,10 +676,10 @@ def logout():
 @app.route('/checkit')
 def admin_panel():
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     elif session['user_id'] != 1:
-        flash('You do not have the proper credentials to view this page.')
+        flash('You do not have the proper credentials to view this page.', 'error')
         return redirect(url_for('user_home'))
 
     users = query_db('select * from users')
@@ -698,18 +695,19 @@ def admin_panel():
 @app.route('/alarm/new', methods=['GET', 'POST'])
 def new_alarm():
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
-    error = None
     user_id = session['user_id']
     if request.method == 'POST':
         input_alarm = validate_alarm_time(request.form['time'])
         input_phone = request.form['phone']
         app.logger.debug('input_phone: %s' % input_phone)
         if not input_alarm:
-            flash('We have encountered an error processing your alarm. Please try again.')
+            flash('We have encountered an error processing your alarm. Please try again.',
+                'error')
         elif not input_phone:
-            flash('You must select a phone number to be associated with this alarm.')
+            flash('You must select a phone number to be associated with this alarm.',
+                'error')
         else:
             user_tz=query_db("""
                 select up_value from user_properties
@@ -719,113 +717,110 @@ def new_alarm():
             input_alarm = get_utc(input_alarm, user_tz['up_value'])
             new_alarm_id = create_new_alarm(
                 user_id, input_phone, input_alarm, active=True)
-            flash('Awesome! You set an alarm!')
+            flash('Well Done! You set an alarm!', 'success')
             return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
     user_phones = get_user_phones(user_id)
-    return render_template('add-new-alarm.html', error=error,
-        user_phones=user_phones)
+    return render_template('add-new-alarm.html', user_phones=user_phones)
 
 
 @app.route('/alarm/remove/<alarm_id>')
 def remove_alarm(alarm_id):
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     elif not verify_alarm_ownership(session['user_id'], alarm_id):
-        flash('Error removing alarm. You can only delete your own alarms!')
+        flash('Cannot remove alarm. You can only delete your own alarms!', 'error')
     elif get_alarm_status(alarm_id):
-        flash('That alarm is currently active, you need to unset it first.')
+        flash('That alarm is currently active, you need to unset it first.', 'error')
     elif not remove_user_alarm(alarm_id):
-        flash('Error removing alarm. Please try again.')
+        flash('Error removing alarm. Please try again.', 'error')
     else:
-        flash('Alarm successfully removed.')
+        flash('Alarm successfully removed.', 'success')
     return redirect(url_for('user_home'))
 
 
 @app.route('/alarm/set/<alarm_id>')
 def set_alarm(alarm_id):
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     user_id = session['user_id']
     if not verify_alarm_ownership(user_id, alarm_id):
-        flash('Error setting alarm. You can only set your own alarms!')
+        flash('Error setting alarm. You can only set your own alarms!', 'error')
     elif not set_user_alarm(alarm_id):
-        flash('Error setting alarm. Please try again.')
+        flash('Error setting alarm. Please try again.', 'error')
     else:
-        flash('Alarm Set!')
+        flash('Alarm Set!', 'success')
     return redirect(url_for('user_home'))
 
 
 @app.route('/alarm/unset/<alarm_id>')
 def unset_alarm(alarm_id):
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     user_id = session['user_id']
     if not verify_alarm_ownership(user_id, alarm_id):
-        flash('Error updating alarm. Can only modify your own alarms.')
+        flash('Error updating alarm. Can only modify your own alarms.', 'error')
     elif not unset_user_alarm(alarm_id):
-        flash('An error occured, please try again.')
+        flash('An error occured, please try again.', 'error')
     else:
-        flash('Alarm canceled')
+        flash('Alarm canceled', 'info')
     return redirect(url_for('user_home'))
 
 
 @app.route('/alarm/update/<alarm_id>', methods=['GET', 'POST'])
 def update_alarm(alarm_id):
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
-    error = None
     user_id = session['user_id']
     if not verify_alarm_ownership(user_id, alarm_id):
-        flash('Error updating alarm. Can only modify your own alarms.')
+        flash('Error updating alarm. Can only modify your own alarms.', 'error')
         return redirect(url_for('user_home'))
-    flash('Page still under construction')
+    flash('Page still under construction', 'info')
     return redirect(url_for('user_home'))
 
 
 @app.route('/phone/new', methods=['GET', 'POST'])
 def new_phone():
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     elif query_db("""
             select phone_id from user_phones
             where phone_owner=%s and phone_verified=%s
             """, (session['user_id'], 0), one=True):
-        flash('You currently have an unverified phone. Please verify first.')
+        flash('You currently have an unverified phone. Please verify first.', 'error')
         return redirect(url_for('user_home'))
-    error = None
     if request.method == 'POST':
         user_phone = validate_phone_number(request.form['user_phone'])
         if not user_phone:
-            error = 'You must enter a valid phone number'
+            flash('You must enter a valid phone number', 'error')
         elif not is_number_unique(user_phone):
-            error = 'That phone number is already associated with an account.'
+            flash('That phone number is already associated with an account.', 'error')
         else:
             uv_code = generate_verification_code()
             session['uv_code'] = uv_code
             send_phone_verification(user_phone, uv_code)
             if create_new_phone(session['user_id'], user_phone):
-                flash('Successfully added new phone!')
+                flash('Successfully added new phone!', 'success')
                 return redirect(url_for('user_home'))
             else:
-                flash('Error adding new phone. Please try again later.')
-    return render_template('add-new-phone.html', error=error)
+                flash('Error adding new phone. Please try again later.', 'error')
+    return render_template('add-new-phone.html')
 
 
 @app.route('/phone/remove/<phone_id>')
 def remove_phone(phone_id):
     if not 'user_id' in session:
-        flash('You must be logged in to view this page.')
+        flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     elif not remove_user_phone(session['user_id'], phone_id):
         flash('An error has occured. Please try again.\
-        Remember, you can only modify your own phones.')
+        Remember, you can only modify your own phones.', 'error')
     else:
-        flash('Successfully removed phone')
+        flash('Successfully removed phone', 'success')
     return redirect(url_for('user_home'))
 
 
@@ -834,7 +829,7 @@ def verify_phone():
     user_id = session['user_id']
     ver_attempt = request.form['ver_attempt']
     if ver_attempt != session['uv_code']:
-        flash('Invalid verification code')
+        flash('Invalid verification code', 'error')
     else:
         db = get_db()
         cur = db.cursor()
@@ -843,10 +838,10 @@ def verify_phone():
                 """, [1, user_id]):
             app.logger.debug('phone_verified for user %s' % user_id)
             db.commit()
-            flash('Phone verified!')
+            flash('Phone verified!', 'success')
             session.pop('uv_code', None)
         else:
-            flash('Sorry, an error occured, please try again')
+            flash('Sorry, an error occured, please try again', 'error')
     return redirect(url_for('user_home'))
 
 

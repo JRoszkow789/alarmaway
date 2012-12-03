@@ -31,12 +31,18 @@
 {% block content %}
 <div class="row well well-large major-container">
   <div class="row zero-row">
-  {% if error %}
+  {% with error_msgs = get_flashed_messages(category_filter=["error"]) %}
+  {% if error_msgs %}
     <div class="alert alert-error">
-      <h4>Woops, something happened</h4>
-      {{ error }}
+      <h4>Oops, an error has occured</h4>
+      <ul class="unstyled">
+      {% for err_msg in error_msgs %}
+        <li>{{ err_msg }}</li>
+      {% endfor %}
+      </ul>
     </div>
   {% endif %}
+  {% endwith %}
     <div class="span5">
       <img src="{{ url_for('static', filename='img/alarm-clock-full.png') }}"
         alt="How AlarmAway Works" class="img-rounded" />

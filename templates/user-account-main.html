@@ -56,15 +56,37 @@
     </div>
   </div>
 {% endif %}
-{% with flashes = get_flashed_messages() %}
-  {% if flashes %}
-    {% for flash_msg in flashes %}
-    <div class="alert alert-error">
-      <button type="button" data-dismiss="alert" class="close">x</button>
-      <h4>An error has occurred...</h4>
-      <p>{{ flash_msg }}</p>
-    </div>
+{% with errors = get_flashed_messages(category_filter=['error']) %}
+  {% if errors %}
+  <div class="alert alert-error">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>An error has occurred...</h4>
+    {% for error in errors %}
+      <p>{{ error }}</p>
     {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+{% with successes= get_flashed_messages(category_filter=['success']) %}
+  {% if successes %}
+  <div class="alert alert-success">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>Well Done!</h4>
+    {% for success in successes %}
+      <p>{{ success }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+{% with infos = get_flashed_messages(category_filter=['info']) %}
+  {% if infos %}
+  <div class="alert alert-info">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>More information</h4>
+    {% for info_msg in infos %}
+      <p>{{ info_msg }}</p>
+    {% endfor %}
+  </div>
   {% endif %}
 {% endwith %}
 <div class="tabbable">
