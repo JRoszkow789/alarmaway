@@ -19,13 +19,39 @@
 {% block content %}
 <div class="row well well-large major-container">
   <div class="row zero-row">
-  {% if error %}
-    <div class="alert alert-error">
-      <button type="button" class="close" data-dismiss="alert">x</button>
-      <h4>Oops, an error has occured</h4>
-      <p>{{ error }}</p>
-    </div>
+   {% with success_messages = get_flashed_messages(category_filter=['success']) %}
+  {% if success_messages %}
+  <div class="alert alert-success">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>Well Done!</h4>
+    {% for success_message in success_messages %}
+      <p>{{ success_message }}</p>
+    {% endfor %}
+  </div>
   {% endif %}
+  {% endwith %}
+  {% with error_messages = get_flashed_messages(category_filter=['error']) %}
+    {% if error_messages %}
+    <div class="alert alert-error">
+      <button type="button" data-dismiss="alert" class="close">x</button>
+      <h4>An error has occurred...</h4>
+      {% for error_message in error_messages %}
+        <p>{{ error_message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  {% with info_messages = get_flashed_messages(category_filter=['info']) %}
+    {% if info_messages %}
+    <div class="alert alert-info">
+      <button type="button" data-dismiss="alert" class="close">x</button>
+      <h4>More information</h4>
+      {% for info_message in info_messagess %}
+        <p>{{ info_message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
   </div>
   <div class="row zero-row">
     <div class="form-content-container faded-insert">

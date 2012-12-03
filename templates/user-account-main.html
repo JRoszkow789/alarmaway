@@ -56,35 +56,35 @@
     </div>
   </div>
 {% endif %}
-{% with errors = get_flashed_messages(category_filter=['error']) %}
-  {% if errors %}
-  <div class="alert alert-error">
-    <button type="button" data-dismiss="alert" class="close">x</button>
-    <h4>An error has occurred...</h4>
-    {% for error in errors %}
-      <p>{{ error }}</p>
-    {% endfor %}
-  </div>
-  {% endif %}
-{% endwith %}
-{% with successes= get_flashed_messages(category_filter=['success']) %}
-  {% if successes %}
+{% with success_messages = get_flashed_messages(category_filter=['success']) %}
+  {% if success_messages %}
   <div class="alert alert-success">
     <button type="button" data-dismiss="alert" class="close">x</button>
     <h4>Well Done!</h4>
-    {% for success in successes %}
-      <p>{{ success }}</p>
+    {% for success_message in success_messages %}
+      <p>{{ success_message }}</p>
     {% endfor %}
   </div>
   {% endif %}
 {% endwith %}
-{% with infos = get_flashed_messages(category_filter=['info']) %}
-  {% if infos %}
+{% with error_messages = get_flashed_messages(category_filter=['error']) %}
+  {% if error_messages %}
+  <div class="alert alert-error">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>An error has occurred...</h4>
+    {% for error_message in error_messages %}
+      <p>{{ error_message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+{% with info_messages = get_flashed_messages(category_filter=['info']) %}
+  {% if info_messages %}
   <div class="alert alert-info">
     <button type="button" data-dismiss="alert" class="close">x</button>
     <h4>More information</h4>
-    {% for info_msg in infos %}
-      <p>{{ info_msg }}</p>
+    {% for info_message in info_messagess %}
+      <p>{{ info_message }}</p>
     {% endfor %}
   </div>
   {% endif %}

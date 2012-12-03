@@ -31,19 +31,40 @@
 {% block content %}
 <div class="row well well-large major-container">
   <div class="row zero-row">
-  {% with error_msgs = get_flashed_messages(category_filter=["error"]) %}
-  {% if error_msgs %}
-    <div class="alert alert-error">
-      <h4>Oops, an error has occured</h4>
-      <ul class="unstyled">
-      {% for err_msg in error_msgs %}
-        <li>{{ err_msg }}</li>
-      {% endfor %}
-      </ul>
-    </div>
+  {% with success_messages = get_flashed_messages(category_filter=['success']) %}
+  {% if success_messages %}
+  <div class="alert alert-success">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>Well Done!</h4>
+    {% for success_message in success_messages %}
+      <p>{{ success_message }}</p>
+    {% endfor %}
+  </div>
   {% endif %}
   {% endwith %}
-    <div class="span5">
+  {% with error_messages = get_flashed_messages(category_filter=['error']) %}
+    {% if error_messages %}
+    <div class="alert alert-error">
+      <button type="button" data-dismiss="alert" class="close">x</button>
+      <h4>An error has occurred...</h4>
+      {% for error_message in error_messages %}
+        <p>{{ error_message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  {% with info_messages = get_flashed_messages(category_filter=['info']) %}
+    {% if info_messages %}
+    <div class="alert alert-info">
+      <button type="button" data-dismiss="alert" class="close">x</button>
+      <h4>More information</h4>
+      {% for info_message in info_messagess %}
+        <p>{{ info_message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+   <div class="span5">
       <img src="{{ url_for('static', filename='img/alarm-clock-full.png') }}"
         alt="How AlarmAway Works" class="img-rounded" />
     </div>
