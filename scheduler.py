@@ -4,7 +4,7 @@ from celery import Celery
 from datetime import timedelta
 import aa_comm
 from config import DB_HOST, DB_USER, DB_PW, DB_PORT, DATABASE
-from config import COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER
+from config import COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER, MSG1, MSG2, MSG3
 
 
 celery = Celery('scheduler')
@@ -34,12 +34,12 @@ class AlarmScheduler:
 
     def __init__(self):
         self.alarm_messages = [
-            ('call', 'Time to Wake Up!'),
-            ('text', 'Are you up yet?'),
-            ('call', 'Hey! Wake Up! Dont make me call again!'),
-            ('text', 'Now are you awake?'),
-            ('call', 'This is the last time im calling! WAKE UP NOW!'),
-            ('text', 'You better be awake! You are... right?')]
+            ('call', None),
+            ('text', MSG1),
+            ('call', None),
+            ('text', MSG2),
+            ('call', None),
+            ('text', MSG3)]
 
     def set_alarm(self, ref_id, alarm_time, phone_number):
         alarm_asyncs = []
@@ -47,7 +47,7 @@ class AlarmScheduler:
             msg_time = alarm_time + timedelta(seconds=(240*(len(alarm_asyncs))))
             if typ == 'call':
                 alarm_asyncs.append(send_user_call.apply_async(
-                    args=(msg, phone_number), eta=msg_time, expires=msg_time+timedelta(seconds=90)))
+                    args=(phone_number,), eta=msg_time, expires=msg_time+timedelta(seconds=90)))
             else:
                 alarm_asyncs.append(send_user_text.apply_async(
                     args=(msg, phone_number), eta=msg_time, expires=msg_time+timedelta(seconds=120)))
@@ -74,7 +74,7 @@ class AlarmScheduler:
         send_user_text.apply_async(args=(msg, number))
 
 @celery.task
-def send_user_call(msg, number):
+def send_user_call(number):
     comm_client = aa_comm.AlarmAwayTwilioClient(
         COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER)
     comm_client.make_call(number,
