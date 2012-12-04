@@ -404,6 +404,10 @@ def get_timezones():
     return pytz.country_timezones('US')
 
 
+def validate_timezone(tz):
+    return tz in get_timezones()
+
+
 def get_phone_id(phone_num):
     phone_info = query_db(
         'select phone_id from user_phones where phone_number=%s' % phone_num,
@@ -529,25 +533,22 @@ def alarm_response():
 
 @app.route('/get-started', methods=['POST'])
 def pre_registration():
-    input_tz = request.form['timezone']
+    input_tz = validate_timezone(request.form['timezone'])
     input_phone = validate_phone_number(request.form['phone'])
     if not input_tz:
         flash('You must specify a timezone.', 'error')
     elif not input_phone:
         flash('Please enter a valid phone number.', 'error')
-    elif not is_number_unique(input_phone):
+    elif get_phone_id(input_phone):
         flash('Sorry, that phone number is already registered.', 'info')
     else:
         uv_code = generate_verification_code()
         send_phone_verification(input_phone, uv_code)
-        session.pop('uv_code', None)
         session['uv_code'] = uv_code
-        session.pop('user_alarm', None)
-        session.pop('user_phone', None)
         session['user_phone'] = input_phone
         session['user_tz'] = input_tz
         return redirect(url_for('registration'))
-    return render_template('welcome.html')
+    return render_template('welcome.html', tz_list=get_timezones())
 
 @app.route('/register', methods=['GET', 'POST'])
 def registration():
@@ -612,6 +613,7 @@ def user_home():
     for phone in user_phones:
         if not phone['phone_verified']:
             need_verify_phone=True
+            break
     user_info = query_db("""
         select user_id, user_email, user_status, user_register
         from users where user_id=%s
