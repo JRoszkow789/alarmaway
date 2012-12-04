@@ -57,7 +57,7 @@
         action="{{ url_for('new_alarm') }}">
       <div class="control-group">
         <label class="control-label" for="time">
-          <a href="#"><i class="icon-question-sign"></i></a> <strong>Alarm Time</strong>
+          <strong>Alarm Time</strong>
         </label>
         <div class="controls">
           <select name="time" id="time">
@@ -110,11 +110,14 @@
             <option value="23:00">11:00 PM</option><option value="23:15">11:15 PM</option>
             <option value="23:30">11:30 PM</option><option value="23:45">11:45 PM</option>
           </select>
+          <a href="#">
+            <i class="icon-question-sign"></i>
+          </a>
         </div>
       </div>
       <div class="control-group">
         <label class="control-label" for="phone">
-          <i class="icon-plus"></i> <strong>Phone</strong>
+          <strong>Phone</strong>
         </label>
         <div class="controls">
           <select name="phone" id="phone">
@@ -124,6 +127,9 @@
               {{ num.phone_number|format_phone_number }}</option>
             {% endfor %}
           </select>
+          <a href="#">
+            <i class="icon-question-sign"></i>
+          </a>
         </div>
       </div>
         <div class="t-center">

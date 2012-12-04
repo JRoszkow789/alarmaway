@@ -4,33 +4,82 @@
 {% block content %}
 <div class="row well well-large major-container">
   <div class="row row-zero">
-    <div class="span8 offset2 t-left">
-      <h3 class="t-center">Users</h3>
-      <ul>
-      {% for user in users %}
-        <li>
-          <strong>id: {{ user.user_id }}</strong>
-          email: {{ user.user_email }}
-          role: {{ user.user_role }}
-          status: {{ user.user_status }}
-        </li>
-      {% endfor %}
-      </ul>
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">Users</h3></caption>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Status</th>
+            <th>Email</th>
+            <th>Registered</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+          <tr>
+            <td><strong>{{ user.user_id }}</strong></td>
+            <td>{{ user.user_status }}</td>
+            <td>{{ user.user_email }}</td>
+            <td>{{ user.user_register }}</td>
+            <td>{{ user.user_role }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
   <div class="row row-zero">
-    <div class="span8 offset2 t-left">
-      <h3 class="t-center">Phones</h3>
-      <ul>
-      {% for phone in phones %}
-        <li>
-          <strong>id: {{ phone.phone_id }}</strong>
-          number: {{ phone.phone_number }}
-          owner: {{ phone.phone_owner }}
-          verified: {{ phone.phone_verified }}
-        </li>
-      {% endfor %}
-      </ul>
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">User Phones</h3></caption>
+        <thead>
+          <tr>
+            <th>Phone ID</th>
+            <th>Number</th>
+            <th>Owner ID</th>
+            <th>Verified</th>
+            <th>Added</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for phone in user_phones %}
+          <tr>
+            <td><strong>{{ phone.phone_id }}</strong></td>
+            <td>{{ phone.phone_number }}</td>
+            <td>{{ phone.phone_owner }}</td>
+            <td>{{ phone.phone_verified }}</td>
+            <td>{{ event.phone_added }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="row row-zero">
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">User Properties</h3></caption>
+        <thead>
+          <tr>
+            <th>User Property ID</th>
+            <th>Owner ID</th>
+            <th>Key</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for prop in user_properties %}
+          <tr>
+            <td><strong>{{ prop.up_id }}</strong></td>
+            <td>{{ prop.up_user }}</td>
+            <td>{{ prop.up_key }}</td>
+            <td>{{ prop.up_value }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
   <div class="row row-zero">
@@ -54,6 +103,81 @@
             <td>{{ alarm.alarm_phone }}</td>
             <td>{{ alarm.alarm_time }}</td>
             <td>{{ alarm.alarm_active }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="row row-zero">
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">Alarm Events</h3></caption>
+        <thead>
+          <tr>
+            <th>Event ID</th>
+            <th>Owner ID</th>
+            <th>Status</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for event in alarm_events %}
+          <tr>
+            <td><strong>{{ event.event_id }}</strong></td>
+            <td>{{ event.event_owner }}</td>
+            <td>{{ event.event_status }}</td>
+            <td>{{ event.event_start }}</td>
+            <td>{{ event.event_end }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="row row-zero">
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">Jobs</h3></caption>
+        <thead>
+          <tr>
+            <th>Job ID</th>
+            <th>Parent ID</th>
+            <th>Task ID</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for job in jobs %}
+          <tr>
+            <td><strong>{{ job.job_id }}</strong></td>
+            <td>{{ job.job_parent }}</td>
+            <td>{{ job.job_task_id }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="row row-zero">
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">Responses</h3></caption>
+        <thead>
+          <tr>
+            <th>Response ID</th>
+            <th>From</th>
+            <th>Received</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for resp in responses %}
+          <tr>
+            <td><strong>{{ resp.response_id }}</strong></td>
+            <td>{{ resp.response_from }}</td>
+            <td>{{ resp.response_received }}</td>
+            <td>{{ resp.response_msg }}</td>
           </tr>
         {% endfor %}
         </tbody>

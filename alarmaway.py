@@ -563,13 +563,13 @@ def registration():
             user_tz = request.form['user_tz']
             if not user_tz:
                 flash("You must select a timezone", 'error')
-                return render_template('register-new.html')
+                return render_template('register-new.html', tz_list=get_timezones())
             elif not user_phone:
                 flash("Please enter a valid phone number", 'error')
-                return render_template('register-new.html')
+                return render_template('register-new.html', tz_list=get_timezones())
             elif not is_number_unique(user_phone):
                 flash('That number is already associated with an account.', 'error')
-                return render_template('register-new.html')
+                return render_template('register-new.html', tz_list=get_timezones())
             else:
                 uv_code = generate_verification_code()
                 session['uv_code'] = uv_code
@@ -688,10 +688,13 @@ def admin_panel():
     alarms = query_db('select * from alarms')
     alarm_events = query_db('select * from alarm_events')
     user_phones = query_db('select * from user_phones')
+    user_properties = query_db('select * from user_properties')
     responses = query_db('select * from responses')
+    jobs = query_db('select * from job_index')
 
     return render_template('admin.html', users=users, phones=user_phones,
-        alarms=alarms, alarm_events=alarm_events, responses=responses)
+        alarms=alarms, alarm_events=alarm_events, responses=responses,
+        user_properties=user_properties, jobs=jobs)
 
 
 @app.route('/alarm/new', methods=['GET', 'POST'])
