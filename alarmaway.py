@@ -688,10 +688,13 @@ def admin_panel():
     alarms = query_db('select * from alarms')
     alarm_events = query_db('select * from alarm_events')
     user_phones = query_db('select * from user_phones')
+    user_properties = query_db('select * from user_properties')
     responses = query_db('select * from responses')
+    jobs = query_db('select * from job_index')
 
     return render_template('admin.html', users=users, phones=user_phones,
-        alarms=alarms, alarm_events=alarm_events, responses=responses)
+        alarms=alarms, alarm_events=alarm_events, responses=responses,
+        user_properties=user_properties, jobs=jobs)
 
 
 @app.route('/alarm/new', methods=['GET', 'POST'])
