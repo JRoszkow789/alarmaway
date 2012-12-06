@@ -1,17 +1,17 @@
 from __future__ import with_statement
-from flask import Flask, render_template, request, flash, redirect,\
+from datetime import datetime, timedelta, time
+import logging
+import random
+import re
+from flask import Flask, render_template, request, flash, redirect, \
     url_for, session, _app_ctx_stack
 import MySQLdb
 import MySQLdb.cursors
-import logging
-import random
-from datetime import datetime, timedelta, time
-import twilio.twiml
 import pytz
-import scheduler
-import re
+import twilio.twiml
 from werkzeug import generate_password_hash, check_password_hash
 import constants
+import scheduler
 
 
 app = Flask(__name__)
@@ -54,6 +54,12 @@ def close_database(exception):
 
 
 def query_db(query, args=(), one=False):
+    """Helper method for establishing db connection and executing query.
+       Passes query directly to a mysql cursor object along with supplied args.
+       By default, this function returns the list of rows returned by the
+       cursor. If the one parameter is set to True, it will return only the
+       first result.
+    """
     cur = get_db().cursor()
     cur.execute(query, args)
     rv = cur.fetchone() if one else cur.fetchall()
@@ -61,29 +67,26 @@ def query_db(query, args=(), one=False):
 
 
 def validate_email(email):
+    """Validates an email address to ensure it is a valid format, and returns
+       the email address in the correct format for our application.
+    """
     rv = EMAIL_RE.search(email)
     return None if rv is None else rv.group()
 
 
 def validate_phone_number(num):
+    """Validates a phone number to ensure it is in a valid format and returns
+       the phone number in the correct format for our application.
+    """
     rv = PHONE_RE.search(num)
     return None if rv is None else (
         rv.group(1) + rv.group(2) + rv.group(3))
 
 
-def is_email_unique(email):
-    rv = query_db('select user_id from users where user_email=%s',
-        email, one=True)
-    return False if rv is not None else True
-
-
-def is_number_unique(num):
-    rv = query_db('select phone_id from user_phones where phone_number=%s',
-        num, one=True)
-    return False if rv is not None else True
-
-
 def format_alarm_time(alarm_time):
+    """Formats a datetime.time object for human-friendly output.
+       Used within Jinja templates.
+    """
     return alarm_time.strftime('%I:%M %p')
 
 
@@ -116,6 +119,15 @@ def create_new_user(email, pw_hash):
     new_user_id = cur.lastrowid
     db.commit()
     return new_user_id
+
+
+def get_user_id(email_address):
+    """Looks up a user by their email address, and returns the user's ID."""
+    user_info = query_db('select user_id from users where user_email = %s',
+        email_address, one=True)
+    if user_info:
+        return user_info['user_id']
+    return None
 
 
 def add_new_user_timezone(new_user_id, user_tz):
@@ -190,6 +202,10 @@ def get_user_phones(user_id, verified=False):
 
 
 def get_phone_number(request_phone_id):
+    """Retrieves a record from the database containing a phone number for
+       the requested phone_id. If a record is found, just the value of
+       phone_number is returned.
+    """
     rv = query_db('select phone_number from user_phones where phone_id=%s',
         request_phone_id, one=True)
     if rv:
@@ -565,13 +581,17 @@ def registration():
             user_tz = request.form['user_tz']
             if not user_tz:
                 flash("You must select a timezone", 'error')
-                return render_template('register-new.html', tz_list=get_timezones())
+                return render_template('register-new.html',
+                    tz_list=get_timezones())
             elif not user_phone:
                 flash("Please enter a valid phone number", 'error')
-                return render_template('register-new.html', tz_list=get_timezones())
-            elif not is_number_unique(user_phone):
-                flash('That number is already associated with an account.', 'error')
-                return render_template('register-new.html', tz_list=get_timezones())
+                return render_template('register-new.html',
+                    tz_list=get_timezones())
+            elif get_phone_id(user_phone):
+                flash('That number is already associated with an account.',
+                    'error')
+                return render_template('register-new.html',
+                    tz_list=get_timezones())
             else:
                 uv_code = generate_verification_code()
                 session['uv_code'] = uv_code
@@ -581,7 +601,7 @@ def registration():
             user_tz = session.pop('user_tz', None)
         user_email = validate_email(request.form['user_email'])
         user_password = request.form['user_password']
-        if user_email and user_password and is_email_unique(user_email):
+        if user_email and user_password and not get_user_id(user_email):
             # All input data is sanitized and validated. Create user and phone
             new_user_id = create_new_user(user_email,
                 generate_password_hash(user_password))
@@ -597,7 +617,8 @@ def registration():
         elif not user_password:
             flash('Please enter a valid password.', 'error')
         else:
-            flash('That email address is already registered with Alarm Away.', 'error')
+            flash('That email address is already registered with Alarm Away.',
+                'error')
     target_template = (
         'register-cont.html' if phone_prev_present else 'register-new.html')
     return render_template(target_template, tz_list=get_timezones())
@@ -623,7 +644,7 @@ def user_home():
     )
     user_alarms = get_user_alarms(user_id, active_only=True)
     user_tz = query_db(
-        'select up_value from user_properties where up_user=%s and up_key=%s',(
+        'select up_value from user_properties where up_user=%s and up_key=%s', (
         user_id, 'user_tz'), one=True
     )
     for alarm in user_alarms:
@@ -671,8 +692,6 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('uv_code', None)
-    session.pop('user_alarm', None)
-    session.pop('user_phone', None)
     session.pop('user_id', None)
     return redirect(url_for('home'))
 
@@ -683,7 +702,8 @@ def admin_panel():
         flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     elif session['user_id'] != 1:
-        flash('You do not have the proper credentials to view this page.', 'error')
+        flash('You do not have the proper credentials to view this page.',
+            'error')
         return redirect(url_for('user_home'))
 
     users = query_db('select * from users')
@@ -710,11 +730,11 @@ def new_alarm():
         input_phone = request.form['phone']
         app.logger.debug('input_phone: %s' % input_phone)
         if not input_alarm:
-            flash('We have encountered an error processing your alarm. Please try again.',
-                'error')
+            flash('We have encountered an error processing your alarm.' +
+                ' Please try again.', 'error')
         elif not input_phone:
-            flash('You must select a phone number to be associated with this alarm.',
-                'error')
+            flash('You must select a phone number to be associated with this ' +
+                'alarm.', 'error')
         else:
             user_tz=query_db("""
                 select up_value from user_properties
@@ -736,9 +756,11 @@ def remove_alarm(alarm_id):
         flash('You must be logged in to view this page.', 'error')
         return redirect(url_for('login'))
     elif not verify_alarm_ownership(session['user_id'], alarm_id):
-        flash('Cannot remove alarm. You can only delete your own alarms!', 'error')
+        flash('Cannot remove alarm. You can only delete your own alarms!',
+            'error')
     elif get_alarm_status(alarm_id):
-        flash('That alarm is currently active, you need to unset it first.', 'error')
+        flash('That alarm is currently active, you need to unset it first.',
+            'error')
     elif not remove_user_alarm(alarm_id):
         flash('Error removing alarm. Please try again.', 'error')
     else:
@@ -798,14 +820,16 @@ def new_phone():
             select phone_id from user_phones
             where phone_owner=%s and phone_verified=%s
             """, (session['user_id'], 0), one=True):
-        flash('You currently have an unverified phone. Please verify first.', 'error')
+        flash('You currently have an unverified phone. Please verify first.',
+            'error')
         return redirect(url_for('user_home'))
     if request.method == 'POST':
         user_phone = validate_phone_number(request.form['user_phone'])
         if not user_phone:
             flash('You must enter a valid phone number', 'error')
-        elif not is_number_unique(user_phone):
-            flash('That phone number is already associated with an account.', 'error')
+        elif get_phone_id(user_phone):
+            flash('That phone number is already associated with an account.',
+                'error')
         else:
             uv_code = generate_verification_code()
             session['uv_code'] = uv_code
@@ -814,7 +838,8 @@ def new_phone():
                 flash('Successfully added new phone!', 'success')
                 return redirect(url_for('user_home'))
             else:
-                flash('Error adding new phone. Please try again later.', 'error')
+                flash('Error adding new phone. Please try again later.',
+                    'error')
     return render_template('add-new-phone.html')
 
 
