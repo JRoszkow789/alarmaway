@@ -405,7 +405,9 @@ def get_timezones():
 
 
 def validate_timezone(tz):
-    return tz in get_timezones()
+    if tz in get_timezones():
+        return tz
+    return None
 
 
 def get_phone_id(phone_num):
