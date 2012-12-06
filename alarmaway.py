@@ -4,13 +4,14 @@ import logging
 import random
 import re
 from flask import Flask, render_template, request, flash, redirect, \
-    url_for, session, _app_ctx_stack
+    g, url_for, session, _app_ctx_stack
 import MySQLdb
 import MySQLdb.cursors
 import pytz
 import twilio.twiml
 from werkzeug import generate_password_hash, check_password_hash
 import constants
+from decorators import login_required
 import scheduler
 
 
@@ -45,13 +46,6 @@ def get_db():
     return top.mysql_db
 
 
-@app.teardown_appcontext
-def close_database(exception):
-    """Closes the database again at the end of the request."""
-    top = _app_ctx_stack.top
-    if hasattr(top, 'mysql_db'):
-        top.mysql_db.close()
-
 
 def query_db(query, args=(), one=False):
     """Helper method for establishing db connection and executing query.
@@ -64,6 +58,25 @@ def query_db(query, args=(), one=False):
     cur.execute(query, args)
     rv = cur.fetchone() if one else cur.fetchall()
     return rv
+
+
+@app.before_request
+def before_request():
+    g.user = None
+    if 'user_id' in session:
+        g.user = query_db("""
+            select user_id, user_email, user_role, user_status, user_register
+            from users where user_id=%s limit 1
+            """, session['user_id'], one=True
+        )
+
+
+@app.teardown_appcontext
+def close_database(exception):
+    """Closes the database again at the end of the request."""
+    top = _app_ctx_stack.top
+    if hasattr(top, 'mysql_db'):
+        top.mysql_db.close()
 
 
 def validate_email(email):
@@ -549,6 +562,7 @@ def alarm_response():
     resp.sms(resp_message)
     return str(resp)
 
+
 @app.route('/get-started', methods=['POST'])
 def pre_registration():
     input_tz = validate_timezone(request.form['timezone'])
@@ -568,11 +582,10 @@ def pre_registration():
         return redirect(url_for('registration'))
     return render_template('welcome.html', tz_list=get_timezones())
 
+
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def registration():
-    if 'user_id' in session:
-        flash('You are already logged in as a registered user!', 'info')
-        return redirect(url_for('home'))
     user_phone = None
     phone_prev_present = True if 'user_phone' in session else False
     if request.method == 'POST':
@@ -626,26 +639,19 @@ def registration():
 
 @app.route('/user')
 @app.route('/user/view')
+@login_required
 def user_home():
-    if not 'user_id' in session:
-        flash('Must be logged in.', 'info')
-        return redirect(url_for('home'))
     need_verify_phone=False
-    user_id = session['user_id']
-    user_phones = get_user_phones(user_id, verified=False)
+    user = g.user
+    user_phones = get_user_phones(user['user_id'], verified=False)
     for phone in user_phones:
         if not phone['phone_verified']:
             need_verify_phone=True
             break
-    user_info = query_db("""
-        select user_id, user_email, user_status, user_register
-        from users where user_id=%s
-        """, user_id, one=True
-    )
-    user_alarms = get_user_alarms(user_id, active_only=True)
+    user_alarms = get_user_alarms(user['user_id'], active_only=True)
     user_tz = query_db(
         'select up_value from user_properties where up_user=%s and up_key=%s', (
-        user_id, 'user_tz'), one=True
+        user['user_id'], 'user_tz'), one=True
     )
     for alarm in user_alarms:
         alarm['local_time'] = get_local(
@@ -656,7 +662,7 @@ def user_home():
         alarm['phone_number'] = get_phone_number(alarm['alarm_phone'])
     return render_template(
         'user-account-main.html',
-        user=user_info,
+        user=user,
         need_verify_phone=need_verify_phone,
         user_alarm_list=user_alarms,
         user_phone_list=user_phones
@@ -697,16 +703,17 @@ def logout():
 
 
 @app.route('/checkit')
+@login_required
 def admin_panel():
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    elif session['user_id'] != 1:
+    if g.user['user_email'].lower() not in app.config['SUPER_USERS']:
         flash('You do not have the proper credentials to view this page.',
             'error')
         return redirect(url_for('user_home'))
 
-    users = query_db('select * from users')
+    users = query_db("""
+        select user_id, user_email, user_role, user_status, user_register
+        from users"""
+    )
     alarms = query_db('select * from alarms')
     alarm_events = query_db('select * from alarm_events')
     user_phones = query_db('select * from user_phones')
@@ -720,11 +727,9 @@ def admin_panel():
 
 
 @app.route('/alarm/new', methods=['GET', 'POST'])
+@login_required
 def new_alarm():
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    user_id = session['user_id']
+    user = g.user
     if request.method == 'POST':
         input_alarm = validate_alarm_time(request.form['time'])
         input_phone = request.form['phone']
@@ -739,23 +744,21 @@ def new_alarm():
             user_tz=query_db("""
                 select up_value from user_properties
                 where up_user=%s and up_key=%s limit 1
-                """, (user_id, 'user_tz'), one=True
+                """, (user['user_id'], 'user_tz'), one=True
             )
             input_alarm = get_utc(input_alarm, user_tz['up_value'])
             new_alarm_id = create_new_alarm(
-                user_id, input_phone, input_alarm, active=True)
+                user['user_id'], input_phone, input_alarm, active=True)
             flash('Well Done! You set an alarm!', 'success')
             return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
-    user_phones = get_user_phones(user_id)
+    user_phones = get_user_phones(user['user_id'])
     return render_template('add-new-alarm.html', user_phones=user_phones)
 
 
 @app.route('/alarm/remove/<alarm_id>')
+@login_required
 def remove_alarm(alarm_id):
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    elif not verify_alarm_ownership(session['user_id'], alarm_id):
+    if not verify_alarm_ownership(g.user['user_id'], alarm_id):
         flash('Cannot remove alarm. You can only delete your own alarms!',
             'error')
     elif get_alarm_status(alarm_id):
@@ -769,12 +772,10 @@ def remove_alarm(alarm_id):
 
 
 @app.route('/alarm/set/<alarm_id>')
+@login_required
 def set_alarm(alarm_id):
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    if not verify_alarm_ownership(user_id, alarm_id):
+    user = g.user
+    if not verify_alarm_ownership(user['user_id'], alarm_id):
         flash('Error setting alarm. You can only set your own alarms!', 'error')
     elif not set_user_alarm(alarm_id):
         flash('Error setting alarm. Please try again.', 'error')
@@ -784,12 +785,10 @@ def set_alarm(alarm_id):
 
 
 @app.route('/alarm/unset/<alarm_id>')
+@login_required
 def unset_alarm(alarm_id):
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    if not verify_alarm_ownership(user_id, alarm_id):
+    user = g.user
+    if not verify_alarm_ownership(user['user_id'], alarm_id):
         flash('Error updating alarm. Can only modify your own alarms.', 'error')
     elif not unset_user_alarm(alarm_id):
         flash('An error occured, please try again.', 'error')
@@ -799,12 +798,10 @@ def unset_alarm(alarm_id):
 
 
 @app.route('/alarm/update/<alarm_id>', methods=['GET', 'POST'])
+@login_required
 def update_alarm(alarm_id):
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    if not verify_alarm_ownership(user_id, alarm_id):
+    user = g.user
+    if not verify_alarm_ownership(user['user_id'], alarm_id):
         flash('Error updating alarm. Can only modify your own alarms.', 'error')
         return redirect(url_for('user_home'))
     flash('Page still under construction', 'info')
@@ -812,14 +809,13 @@ def update_alarm(alarm_id):
 
 
 @app.route('/phone/new', methods=['GET', 'POST'])
+@login_required
 def new_phone():
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    elif query_db("""
+    user = g.user
+    if query_db("""
             select phone_id from user_phones
             where phone_owner=%s and phone_verified=%s
-            """, (session['user_id'], 0), one=True):
+            """, (user['user_id'], 0), one=True):
         flash('You currently have an unverified phone. Please verify first.',
             'error')
         return redirect(url_for('user_home'))
@@ -834,7 +830,7 @@ def new_phone():
             uv_code = generate_verification_code()
             session['uv_code'] = uv_code
             send_phone_verification(user_phone, uv_code)
-            if create_new_phone(session['user_id'], user_phone):
+            if create_new_phone(user['user_id'], user_phone):
                 flash('Successfully added new phone!', 'success')
                 return redirect(url_for('user_home'))
             else:
@@ -844,11 +840,9 @@ def new_phone():
 
 
 @app.route('/phone/remove/<phone_id>')
+@login_required
 def remove_phone(phone_id):
-    if not 'user_id' in session:
-        flash('You must be logged in to view this page.', 'error')
-        return redirect(url_for('login'))
-    elif not remove_user_phone(session['user_id'], phone_id):
+    if not remove_user_phone(g.user['user_id'], phone_id):
         flash('An error has occured. Please try again.\
         Remember, you can only modify your own phones.', 'error')
     else:
@@ -857,8 +851,9 @@ def remove_phone(phone_id):
 
 
 @app.route('/phone/verify', methods=['POST'])
+@login_required
 def verify_phone():
-    user_id = session['user_id']
+    user = g.user
     ver_attempt = request.form['ver_attempt']
     if ver_attempt != session['uv_code']:
         flash('Invalid verification code', 'error')
@@ -867,8 +862,8 @@ def verify_phone():
         cur = db.cursor()
         if cur.execute("""
                 update user_phones set phone_verified=%s where phone_owner=%s
-                """, [1, user_id]):
-            app.logger.debug('phone_verified for user %s' % user_id)
+                """, [1, user['user_id']]):
+            app.logger.debug('phone_verified for user %s' % user['user_id'])
             db.commit()
             flash('Phone verified!', 'success')
             session.pop('uv_code', None)
