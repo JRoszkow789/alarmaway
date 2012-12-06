@@ -4,6 +4,7 @@ import unittest
 from contextlib import closing
 import MySQLdb as msdb
 
+
 def get_db():
     db = msdb.connect(
         host=alarmaway.app.config['TEST_DB_HOST'],
@@ -14,17 +15,18 @@ def get_db():
         cursorclass=msdb.cursors.DictCursor)
     return db
 
-def get_new_db():
+def initialize_test_db():
     with closing(get_db()) as db:
         with open('schema.sql') as f:
             db.cursor().execute(f.read())
-    return get_db()
+        db.commit()
 
 
 class AlarmAwayTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.db = get_new_db()
+        initialize_test_db()
+        self.db = get_db()
         alarmaway.app.config['TESTING'] = True
         self.app = alarmaway.app.test_client()
 
@@ -35,6 +37,9 @@ class AlarmAwayTestCase(unittest.TestCase):
     def test_serverup(self):
         rv = self.app.get('/')
         assert rv.status_code == 200
+
+    def test_no_current_user(self):
+        print self.app.get('/user/view')
 
 if __name__ == '__main__':
     unittest.main()
