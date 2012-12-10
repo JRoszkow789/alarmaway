@@ -19,6 +19,7 @@ app = Flask(__name__)
 app.config.from_object('config')
 sched = scheduler.AlarmScheduler()
 
+_master_timezone_list = pytz.country_timezones('US')
 
 PHONE_RE = re.compile(
     r'''^\(?([0-9]{3})\)?[. -]?([0-9]{3})[. -]?([0-9]{4})$''')
@@ -422,16 +423,8 @@ def get_next_run_datetime(alarm_time):
     return run_time
 
 
-def validate_alarm_time(alarm_time):
-    hours, mins = alarm_time.split(':')
-    if alarm_time:
-        return time(hour=int(hours), minute=int(mins))
-    return None
-
-
 def get_timezones():
-    return pytz.country_timezones('US')
-
+    return _master_timezone_list
 
 def validate_timezone(tz):
     if tz in get_timezones():
@@ -448,6 +441,7 @@ def get_phone_id(phone_num):
 
 
 def generate_join_message(new_number):
+    #TODO
     sched.send_message(
         'Welcome to AlarmAway! To complete registration, please visit %s' % (
         'JoeRoszkowski.com'), new_number
@@ -584,7 +578,6 @@ def pre_registration():
 
 
 @app.route('/register', methods=['GET', 'POST'])
-@login_required
 def registration():
     user_phone = None
     phone_prev_present = True if 'user_phone' in session else False
@@ -731,9 +724,8 @@ def admin_panel():
 def new_alarm():
     user = g.user
     if request.method == 'POST':
-        input_alarm = validate_alarm_time(request.form['time'])
+        input_alarm = datetime.strptime(request.form['time'], '%H:%M')
         input_phone = request.form['phone']
-        app.logger.debug('input_phone: %s' % input_phone)
         if not input_alarm:
             flash('We have encountered an error processing your alarm.' +
                 ' Please try again.', 'error')
@@ -746,7 +738,7 @@ def new_alarm():
                 where up_user=%s and up_key=%s limit 1
                 """, (user['user_id'], 'user_tz'), one=True
             )
-            input_alarm = get_utc(input_alarm, user_tz['up_value'])
+            input_alarm = get_utc(input_alarm.time(), user_tz['up_value'])
             new_alarm_id = create_new_alarm(
                 user['user_id'], input_phone, input_alarm, active=True)
             flash('Well Done! You set an alarm!', 'success')
