@@ -7,9 +7,10 @@ import pytz
 import twilio.twiml
 from werkzeug import generate_password_hash, check_password_hash
 
-from alarm_app import app, sched, get_db, query_db
+from . import app, sched, get_db, query_db
 import constants
 from decorators import login_required
+from forms import LoginForm
 
 
 _master_timezone_list = pytz.country_timezones('US')
@@ -595,30 +596,25 @@ def user_home():
     )
 
 
+#TODO should really implement some form of 'not_logged_in_required' decorator?
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
         flash('You are already logged in!', 'info')
-        return redirect(url_for('home'))
-    if request.method == 'POST':
-        if not request.form['user_email']:
-            flash('Must enter an email address', 'error')
-        elif not request.form['user_password']:
-            flash('Must enter a password', 'error')
+        return redirect(url_for('user_home'))
+    form = LoginForm(request.form)
+    if form.validate_on_submit():
+        user = query_db('''select user_id, user_pw from users where
+                               user_email=%s''', form.email.data, one=True)
+        if user and check_password_hash(user['user_pw'], form.password.data):
+            session['user_id'] = user['user_id']
+            flash('Successfully logged in', 'success')
+            return redirect(url_for('user_home'))
+        elif user:
+            flash("Invalid password", 'error')
         else:
-            login_email = validate_email(request.form['user_email'])
-            login_pw = request.form['user_password']
-            user = query_db('''select user_id, user_pw from users where
-                               user_email=%s''', login_email, one=True)
-            if user and check_password_hash(user['user_pw'], login_pw):
-                session['user_id'] = user['user_id']
-                flash('Successfully logged in', 'success')
-                return redirect(url_for('user_home'))
-            elif user:
-                flash("Invalid password", 'error')
-            else:
-                flash("Invalid email address", 'error')
-    return render_template('login.html')
+            flash("Invalid email address", 'error')
+    return render_template('login.html', form=form)
 
 
 @app.route('/logout')
