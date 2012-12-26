@@ -1,9 +1,10 @@
-from flask.ext.wtf import BooleanField, Email, Form, PasswordField, Required
+from flask.ext.wtf import Email, Form, PasswordField, Required
 from flask.ext.wtf import SelectField, TextField
 import pytz
 
 def get_timezone_list():
-    return pytz.country_timezones('US')
+    tz_list = [(tz, tz) for tz in pytz.country_timezones('US')]
+    return [(None, 'Choose timezone...'),] + tz_list
 
 class LoginForm(Form):
     email = TextField('Email Address', [Required(), Email()])
@@ -14,4 +15,3 @@ class RegisterForm(Form):
     password = PasswordField('Password', [Required()])
     timezone = SelectField('Timezone', [Required()],
         choices=get_timezone_list())
-    accept_tos = BooleanField('I accept the TOS', [Required()])
