@@ -1,5 +1,6 @@
 from flask.ext.wtf import Email, Form, PasswordField, Required
 from flask.ext.wtf import SelectField, TextField
+from flask.ext.wtf.html5 import TelField
 import pytz
 
 def get_timezone_list():
@@ -15,3 +16,6 @@ class RegisterForm(Form):
     password = PasswordField('Password', [Required()])
     timezone = SelectField('Timezone', [Required()],
         choices=get_timezone_list())
+
+class NewPhoneForm(Form):
+    phone_number = TelField('Phone Number', [Required()])

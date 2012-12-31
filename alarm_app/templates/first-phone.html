@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block hero_title %}
+  <span class="header-dark">Welcome to the</span>
+  <span class="header-blue">AlarmAway</span>
+  <span class="header-dark"> Family</span>
+{% endblock %}
+{% block content %}
+<div class="row well well-large major-container">
+  <h2 class="t-center">You're almost there!</h2>
+  <p class="lead">
+    Congratulations on creating an account! In order to use the service,
+    you need to provide a phone number that you would like to use to receive
+    your wake up calls and messages.
+  </p>
+  <div class="row zero-row t-center">
+    <form action="{{ url_for('first_phone') }}" method="POST">
+      {{ form.csrf_token }}
+      {{ form.phone_number(class="input-xlarge", placeholder="e.g. 555-555-1234") }}
+      <h3>
+        And that's it! Checkout your account and set your first alarm!
+      </h3>
+      <button type="submit" class="btn btn-large btn-warning">
+        <strong>Continue to your account &raquo;</strong>
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

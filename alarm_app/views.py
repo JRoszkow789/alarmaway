@@ -10,7 +10,7 @@ from werkzeug import generate_password_hash, check_password_hash
 from . import app, sched, get_db, query_db
 import constants
 from decorators import login_required
-from forms import LoginForm, RegisterForm
+from forms import LoginForm, NewPhoneForm, RegisterForm
 
 
 _master_timezone_list = pytz.country_timezones('US')
@@ -468,14 +468,11 @@ def home():
 def index():
     form = RegisterForm(request.form)
     if form.validate_on_submit():
-        app.logger.warn('Index-Register form vaidated on submit')
         if get_user_id(form.email.data):
-            app.logger.debug('user already exists: %s' % get_user_id(form.email.data))
             flash('Already an account with that email. Login Instead', 'info')
             return redirect(url_for('login'))
         new_user = create_new_user(
             form.email.data, generate_password_hash(form.password.data))
-        app.logger.warn('new user id: %s' % new_user)
         if not new_user:
             flash('Error creating user. Please try again later.')
         elif not add_new_user_timezone(new_user, form.timezone.data):
@@ -484,9 +481,31 @@ def index():
                 new_user, form.timezone.data))
         else:
             session['user_id'] = new_user
-            return redirect(url_for('user_home'))
-        app.logger.debug('Errors in RegisterForm: %s' % form.errors)
+            return redirect(url_for('first_phone'))
     return render_template('index.html', form=form)
+
+
+@app.route('/register2', methods=['GET', 'POST'])
+def first_phone():
+    if not 'user_id' in session:
+        return redirect(url_for('index.html'))
+    form = NewPhoneForm(request.form)
+    user_id = session['user_id']
+    if form.validate_on_submit():
+        user_phone_number = validate_phone_number(form.phone_number.data)
+        new_phone_id = create_new_phone(
+            user_id,
+            user_phone_number)
+        app.logger.debug("""
+            new phone created in view::first_phone
+            user: %s
+            phone: %s
+            created phone id: %s
+            """ % (user_id, user_phone_number, new_phone_id
+        ))
+        return redirect(url_for('user_home'))
+    app.logger.debug('first_phone form errors: %s' % form.errors)
+    return render_template('first-phone.html', form=form)
 
 
 @app.route('/twimlio', methods=['POST'])
