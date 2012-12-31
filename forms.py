@@ -33,3 +33,9 @@ class LoginForm(Form):
 
     def __repr__(self):
         return "<LoginForm(flask.WTF) :: Fields %s>" % (locals)
+
+class PhoneVerificationForm(Form):
+    """A basic verification form to take in the user's verification code
+    attempt.
+    """
+    verification_code = TextField('Verification code', [Required(),])

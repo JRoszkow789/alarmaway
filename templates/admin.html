@@ -44,13 +44,13 @@
           </tr>
         </thead>
         <tbody>
-        {% for phone in user_phones %}
+        {% for phone in phones %}
           <tr>
             <td><strong>{{ phone.phone_id }}</strong></td>
             <td>{{ phone.phone_number }}</td>
             <td>{{ phone.phone_owner }}</td>
             <td>{{ phone.phone_verified }}</td>
-            <td>{{ event.phone_added }}</td>
+            <td>{{ phone.phone_added }}</td>
           </tr>
         {% endfor %}
         </tbody>

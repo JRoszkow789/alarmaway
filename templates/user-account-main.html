@@ -46,9 +46,10 @@
       </p>
       <form class="form-inline" method="POST"
           action="{{ url_for('verify_phone') }}">
-        <input type="text" class="input-medium" name="ver_attempt"
-          placeholder="Verification Code"/>
-        <button type="submit" class="btn">Verify Phone</button>
+        {{ form.csrf_token }}
+        {{ form.verification_code(class="input-medium",
+          placeholder="Verification Code") }}
+        <input type="submit" class="btn" value="Verify Phone">
       </form>
       <p>Wrong Number? <a href="#">Change it here.</a> Or we can
         <a href="#">Send a new verification code.</a>

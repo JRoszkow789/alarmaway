@@ -13,7 +13,7 @@ from werkzeug import generate_password_hash, check_password_hash
 import constants
 from decorators import login_required
 import scheduler
-from forms import RegisterBeginForm, LoginForm
+from forms import RegisterBeginForm, LoginForm, PhoneVerificationForm
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -118,6 +118,16 @@ def format_user_date(user_date):
 
 def format_phone_number(num):
     return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
+
+def verify_user_phone(user_id):
+    """Updates the specified user's phones to verified.
+    """
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        'update user_phones set phone_verified=%s where phone_owner=%s',
+        (1, user_id))
+    db.commit()
 
 
 def create_new_user(email, pw_hash):
@@ -629,12 +639,13 @@ def registration():
 @app.route('/user/view')
 @login_required
 def user_home():
-    need_verify_phone=False
+    need_verify_phone, verify_form = False, None
     user = g.user
     user_phones = get_user_phones(user['user_id'], verified=False)
     for phone in user_phones:
         if not phone['phone_verified']:
-            need_verify_phone=True
+            need_verify_phone = True
+            verify_form = PhoneVerificationForm(request.form)
             break
     user_alarms = get_user_alarms(user['user_id'], active_only=True)
     user_tz = query_db(
@@ -652,6 +663,7 @@ def user_home():
         'user-account-main.html',
         user=user,
         need_verify_phone=need_verify_phone,
+        form=verify_form,
         user_alarm_list=user_alarms,
         user_phone_list=user_phones
     )
@@ -834,22 +846,16 @@ def remove_phone(phone_id):
 @app.route('/phone/verify', methods=['POST'])
 @login_required
 def verify_phone():
-    user = g.user
-    ver_attempt = request.form['ver_attempt']
-    if ver_attempt != session['uv_code']:
-        flash('Invalid verification code', 'error')
-    else:
-        db = get_db()
-        cur = db.cursor()
-        if cur.execute("""
-                update user_phones set phone_verified=%s where phone_owner=%s
-                """, [1, user['user_id']]):
-            app.logger.debug('phone_verified for user %s' % user['user_id'])
-            db.commit()
-            flash('Phone verified!', 'success')
-            session.pop('uv_code', None)
+    form = PhoneVerificationForm(request.form)
+    if form.validate_on_submit():
+        correct_code = session.get('uv_code', None)
+        if correct_code is None:
+            flash('An Error has occured, please request a new code.', 'error')
+        elif form.verification_code.data != correct_code:
+            flash('Invalid verification code. Try again or request a new code',
+                'error')
         else:
-            flash('Sorry, an error occured, please try again', 'error')
+            verify_user_phone(g.user['user_id'])
     return redirect(url_for('user_home'))
 
 
