@@ -1,6 +1,7 @@
 import pytz
 
 from flask.ext.wtf import Form, SelectField, Required, Email, PasswordField
+from flask.ext.wtf import TextField
 from flask.ext.wtf.html5 import TelField
 
 def get_timezone_list():
@@ -23,3 +24,12 @@ class RegisterBeginForm(Form):
     timezone = SelectField('Timezone', [Required(),],
         choices=([(None, 'Choose your timezone...'),]
             + [(timezone, timezone) for timezone in get_timezone_list()]))
+
+class LoginForm(Form):
+    """A basic login form. Includes an email field and a password field.
+    """
+    email = TextField('Email Address', [Required(), Email()])
+    password = PasswordField('Password', [Required()])
+
+    def __repr__(self):
+        return "<LoginForm(flask.WTF) :: Fields %s>" % (locals)

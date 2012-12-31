@@ -82,15 +82,12 @@
   </div>
   <div class="span5 offset1 t-center faded-insert">
     <form method="post" class="form-signin" action="{{ url_for('login') }}">
+      {{ form.csrf_token }}
       <h3 class="header-dark">Existing user sign in</h3>
-      <input type="text" name='user_email' class="input-xlarge"
-        placeholder="Email address" />
-      <input type="password" name="user_password" class="input-xlarge"
-        placeholder="Password" />
+      {{ form.email(class="input-xlarge", placeholder="Email address") }}
+      {{ form.password(class="input-xlarge", placeholder="Password") }}
       <br />
-      <button class="btn btn-large btn-primary" type="submit">
-        Sign in
-      </button>
+      <input type="submit" class="btn btn-large btn-primary" value="Sign in">
     </form>
   </div>
 </div>

@@ -13,7 +13,7 @@ from werkzeug import generate_password_hash, check_password_hash
 import constants
 from decorators import login_required
 import scheduler
-from forms import RegisterBeginForm
+from forms import RegisterBeginForm, LoginForm
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -662,25 +662,19 @@ def login():
     if 'user_id' in session:
         flash('You are already logged in!', 'info')
         return redirect(url_for('home'))
-    if request.method == 'POST':
-        if not request.form['user_email']:
-            flash('Must enter an email address', 'error')
-        elif not request.form['user_password']:
-            flash('Must enter a password', 'error')
+    form = LoginForm(request.form)
+    if form.validate_on_submit():
+        user = query_db('''select user_id, user_pw from users where
+                               user_email=%s''', form.email.data, one=True)
+        if user and check_password_hash(user['user_pw'], form.password.data):
+            session['user_id'] = user['user_id']
+            flash('Successfully logged in', 'success')
+            return redirect(url_for('user_home'))
+        elif user:
+            flash("Invalid password", 'error')
         else:
-            login_email = validate_email(request.form['user_email'])
-            login_pw = request.form['user_password']
-            user = query_db('''select user_id, user_pw from users where
-                               user_email=%s''', login_email, one=True)
-            if user and check_password_hash(user['user_pw'], login_pw):
-                session['user_id'] = user['user_id']
-                flash('Successfully logged in', 'success')
-                return redirect(url_for('user_home'))
-            elif user:
-                flash("Invalid password", 'error')
-            else:
-                flash("Invalid email address", 'error')
-    return render_template('login.html')
+            flash("Invalid email address", 'error')
+    return render_template('login.html', form=form)
 
 
 @app.route('/logout')
