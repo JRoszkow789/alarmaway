@@ -13,7 +13,7 @@ from werkzeug import generate_password_hash, check_password_hash
 import constants
 from decorators import login_required
 import scheduler
-
+from forms import RegisterBeginForm
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -523,11 +523,26 @@ def server_error(error):
     return render_template('500.html'), 500
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def home():
     if 'user_id' in session:
         return redirect(url_for('user_home'))
-    return render_template('welcome.html', tz_list=get_timezones())
+    form = RegisterBeginForm(request.form)
+    if form.validate_on_submit():
+        phone_number = validate_phone_number(form.phone_number.data)
+        if not phone_number:
+            flash('Please enter a valid phone number.', 'error')
+        elif get_phone_id(phone_number):
+            flash('Sorry, that phone number is already registered.', 'info')
+        else:
+            uv_code = generate_verification_code()
+            send_phone_verification(phone_number, uv_code)
+            session['uv_code'] = uv_code
+            session['user_phone'] = phone_number
+            session['user_tz'] = form.timezone.data
+            return redirect(url_for('registration'))
+    return render_template('index.html', form=form)
+
 
 
 @app.route('/twimlio', methods=['POST'])
@@ -555,26 +570,6 @@ def alarm_response():
     resp = twilio.twiml.Response()
     resp.sms(resp_message)
     return str(resp)
-
-
-@app.route('/get-started', methods=['POST'])
-def pre_registration():
-    input_tz = validate_timezone(request.form['timezone'])
-    input_phone = validate_phone_number(request.form['phone'])
-    if not input_tz:
-        flash('You must specify a timezone.', 'error')
-    elif not input_phone:
-        flash('Please enter a valid phone number.', 'error')
-    elif get_phone_id(input_phone):
-        flash('Sorry, that phone number is already registered.', 'info')
-    else:
-        uv_code = generate_verification_code()
-        send_phone_verification(input_phone, uv_code)
-        session['uv_code'] = uv_code
-        session['user_phone'] = input_phone
-        session['user_tz'] = input_tz
-        return redirect(url_for('registration'))
-    return render_template('welcome.html', tz_list=get_timezones())
 
 
 @app.route('/register', methods=['GET', 'POST'])

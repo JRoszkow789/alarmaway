@@ -77,31 +77,24 @@
         <span class="header-blue">Free!</span>
       </h3>
       <form method="post" class="form-horizontal"
-          action="{{ url_for('pre_registration') }}">
+          action="{{ url_for('home') }}">
+        {{ form.csrf_token }}
         <div class="control-group">
           <label class="control-label" for="timezone">
             <strong>
-              Timezone
+              {{ form.timezone.label }}
             </strong>
           </label>
           <div class="controls">
-            <select name="timezone" id="timezone">
-              <option>Select a timezone</option>
-              {% for tz in tz_list %}
-              <option value="{{ tz }}">{{ tz }}</option>
-              {% else %}
-              <option value="US/Eastern">US/Eastern</option>
-              {% endfor %}
-            </select>
+            {{ form.timezone }}
           </div>
         </div>
         <div class="control-group">
           <label class="control-label" for="phone">
-            <strong>Phone Number</strong>
+            <strong>{{ form.phone_number.label }}</strong>
           </label>
           <div class="controls">
-            <input type="text" id="phone" name="phone"
-                      placeholder="e.g. 555-555-5555" />
+            {{ form.phone_number(placeholder="e.g. (555)555-1234") }}
           </div>
         </div>
         <div class="row">
