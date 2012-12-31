@@ -58,20 +58,19 @@
       <h3 class="t-center">
         Enter your new number
       </h3>
-      <form action="{{ url_for('new_phone') }}" method="post">
+      <form action="{{ url_for('new_phone') }}" method="POST">
+        {{ form.csrf_token }}
         <label>
-          <strong>Phone Number</strong>
+          <strong>{{ form.phone_number.label }}</strong>
         </label>
-        <input type="tel" name="user_phone"
-          placeholder="e.g. (555)555-1234" />
+        {{ form.phone_number(placeholder="e.g. (555)555-1234") }}
         <span class="help-block">
          We'll send a verification code to this number via text message. 
           <a href="#">Terms and Conditions</a>
         </span>
         <div class="t-center">
-          <button type="submit" class="btn btn-warning btn-large">
-            <strong>Add this number &raquo;</strong>
-          </button>
+          <input type="submit" class="btn btn-warning btn-large"
+            value="Add this number &raquo;">
         </div>
       </form>
     </div>

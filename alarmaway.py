@@ -14,6 +14,7 @@ import constants
 from decorators import login_required
 import scheduler
 from forms import RegisterBeginForm, LoginForm, PhoneVerificationForm
+from forms import AddUserPhoneForm, FullRegisterForm
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -812,24 +813,25 @@ def new_phone():
         flash('You currently have an unverified phone. Please verify first.',
             'error')
         return redirect(url_for('user_home'))
-    if request.method == 'POST':
-        user_phone = validate_phone_number(request.form['user_phone'])
-        if not user_phone:
+    form = AddUserPhoneForm(request.form)
+    if form.validate_on_submit():
+        phone_number = validate_phone_number(form.phone_number.data)
+        if not phone_number:
             flash('You must enter a valid phone number', 'error')
-        elif get_phone_id(user_phone):
+        elif get_phone_id(phone_number):
             flash('That phone number is already associated with an account.',
                 'error')
         else:
             uv_code = generate_verification_code()
             session['uv_code'] = uv_code
-            send_phone_verification(user_phone, uv_code)
-            if create_new_phone(user['user_id'], user_phone):
+            send_phone_verification(phone_number, uv_code)
+            if create_new_phone(user['user_id'], phone_number):
                 flash('Successfully added new phone!', 'success')
                 return redirect(url_for('user_home'))
             else:
                 flash('Error adding new phone. Please try again later.',
                     'error')
-    return render_template('add-new-phone.html')
+    return render_template('add-new-phone.html', form=form)
 
 
 @app.route('/phone/remove/<phone_id>')

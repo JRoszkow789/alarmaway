@@ -25,6 +25,17 @@ class RegisterBeginForm(Form):
         choices=([(None, 'Choose your timezone...'),]
             + [(timezone, timezone) for timezone in get_timezone_list()]))
 
+class FullRegisterForm(Form):
+    """
+    """
+    email = TextField('Email address', [Required(), Email()])
+    password = PasswordField('Password', [Required(),])
+    phone_number = TelField('Phone Number', [Required()])
+    timezone = SelectField('Timezone', [Required(),],
+        choices=([(None, 'Choose your timezone...'),]
+            + [(timezone, timezone) for timezone in get_timezone_list()]))
+
+
 class LoginForm(Form):
     """A basic login form. Includes an email field and a password field.
     """
@@ -39,3 +50,6 @@ class PhoneVerificationForm(Form):
     attempt.
     """
     verification_code = TextField('Verification code', [Required(),])
+
+class AddUserPhoneForm(Form):
+    phone_number = TelField('Phone number', [Required(),])
