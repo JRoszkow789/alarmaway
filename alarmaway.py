@@ -615,55 +615,38 @@ def alarm_response():
 
 @app.route('/register', methods=['GET', 'POST'])
 def registration():
-    user_phone = None
-    phone_prev_present = True if 'user_phone' in session else False
-    if request.method == 'POST':
-        if not phone_prev_present:
-            user_phone = validate_phone_number(request.form['user_phone'])
-            user_tz = request.form['user_tz']
-            if not user_tz:
-                flash("You must select a timezone", 'error')
-                return render_template('register-new.html',
-                    tz_list=get_timezones())
-            elif not user_phone:
-                flash("Please enter a valid phone number", 'error')
-                return render_template('register-new.html',
-                    tz_list=get_timezones())
-            elif get_phone_id(user_phone):
-                flash('That number is already associated with an account.',
+    if 'user_id' in session:
+        flash('Already logged in!')
+        return redirect(url_for('user_home'))
+    form = FullRegisterForm(request.form)
+    if form.validate_on_submit():
+        user_phone_number = validate_phone_number(form.phone_number.data)
+        user_email = form.email.data
+        user_timezone = form.timezone.data
+        if not user_phone_number:
+            flash("Please enter a valid phone number", 'error')
+        elif get_phone_id(user_phone_number):
+            flash('That number is already associated with an account.',
                     'error')
-                return render_template('register-new.html',
-                    tz_list=get_timezones())
-            else:
-                uv_code = generate_verification_code()
-                session['uv_code'] = uv_code
-                send_phone_verification(user_phone, uv_code)
+        elif get_user_id(user_email):
+            flash('That email is already registered, login instead.')
+            return redirect(url_for('login'))
         else:
-            user_phone = session.pop('user_phone')
-            user_tz = session.pop('user_tz', None)
-        user_email = validate_email(request.form['user_email'])
-        user_password = request.form['user_password']
-        if user_email and user_password and not get_user_id(user_email):
-            # All input data is sanitized and validated. Create user and phone
-            new_user_id = create_new_user(user_email,
-                generate_password_hash(user_password))
-            if not add_new_user_timezone(new_user_id, user_tz):
-                flash('Error adding timezone, please try again', 'error')
-            else:
-                session.pop('user_tz', None)
-            new_phone_id = create_new_phone(new_user_id, user_phone)
+            uv_code = generate_verification_code()
+            session['uv_code'] = uv_code
+            send_phone_verification(user_phone_number, uv_code)
+            new_user_id = create_new_user(
+                user_email, generate_password_hash(form.password.data))
+            new_tz_id = add_new_user_timezone(new_user_id, user_timezone)
+            new_phone_id = create_new_phone(new_user_id, user_phone_number)
+
             session['user_id'] = new_user_id
+            app.logger.debug("""
+                View::registration - New User Created
+                id: %s, email: %s, phone_id: %s, tz_id: %s
+                """ % (new_user_id, user_email, new_phone_id, new_tz_id))
             return redirect(url_for('user_home'))
-        elif not user_email:
-            flash('Please enter a valid email address.', 'error')
-        elif not user_password:
-            flash('Please enter a valid password.', 'error')
-        else:
-            flash('That email address is already registered with Alarm Away.',
-                'error')
-    target_template = (
-        'register-cont.html' if phone_prev_present else 'register-new.html')
-    return render_template(target_template, tz_list=get_timezones())
+    return render_template('registration.html', form=form)
 
 
 @app.route('/user')
