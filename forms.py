@@ -25,6 +25,14 @@ class RegisterBeginForm(Form):
         choices=([(None, 'Choose your timezone...'),]
             + [(timezone, timezone) for timezone in get_timezone_list()]))
 
+
+class RegisterContinueForm(Form):
+    """
+    """
+    email = TextField('Your email address', [Required(), Email()])
+    password = PasswordField('Create a password', [Required()])
+
+
 class FullRegisterForm(Form):
     """
     """

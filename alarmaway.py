@@ -14,7 +14,7 @@ import constants
 from decorators import login_required
 import scheduler
 from forms import RegisterBeginForm, LoginForm, PhoneVerificationForm
-from forms import AddUserPhoneForm, FullRegisterForm
+from forms import AddUserPhoneForm, FullRegisterForm, RegisterContinueForm
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -551,9 +551,39 @@ def home():
             session['uv_code'] = uv_code
             session['user_phone'] = phone_number
             session['user_tz'] = form.timezone.data
-            return redirect(url_for('registration'))
+            return redirect(url_for('continue_registration'))
     return render_template('index.html', form=form)
 
+
+#TODO this is gonna need more error handling somewhere,
+#maybe try/except here, or handle errors in functions themselves?
+@app.route('/register2', methods=['GET', 'POST'])
+def continue_registration():
+    form = RegisterContinueForm(request.form)
+    if form.validate_on_submit():
+        #Form validates the format of the email address, but we need to check
+        #that it does not already exist in our system
+        user_email = form.email.data
+        if get_user_id(user_email) is not None:
+            flash('That email address is already registered. Sign in instead.')
+            return redirect(url_for('login'))
+
+        new_user_id = create_new_user(
+            user_email, generate_password_hash(form.password.data))
+        new_tz_id = add_new_user_timezone(
+            new_user_id, session.pop('user_tz', None))
+        new_phone_id = create_new_phone(
+            new_user_id, session.pop('user_phone', None))
+
+        #User, phone, timezone all successfully added. 'Login' the user 
+        #by storing their new id in session, and direct to new account page
+        app.logger.debug("""
+            View::continue_registration - New User Created
+            id: %s, email: %s, phone_id: %s, tz_id: %s
+            """ % (new_user_id, user_email, new_phone_id, new_tz_id))
+        session['user_id'] = new_user_id
+        return redirect(url_for('user_home'))
+    return render_template('register2.html', form=form)
 
 
 @app.route('/twimlio', methods=['POST'])

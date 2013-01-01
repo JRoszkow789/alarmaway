@@ -49,7 +49,7 @@
   </div>
   {% endif %}
 {% endwith %}
-{% with info_messages = get_flashed_messages(category_filter=['info']) %}
+{% with info_messages = get_flashed_messages() %}
   {% if info_messages %}
   <div class="alert alert-info">
     <button type="button" data-dismiss="alert" class="close">x</button>
