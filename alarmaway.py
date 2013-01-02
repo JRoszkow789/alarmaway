@@ -22,17 +22,9 @@ app = Flask(__name__)
 app.config.from_object('config')
 sched = scheduler.AlarmScheduler()
 
-_master_timezone_list = pytz.country_timezones('US')
 
 PHONE_RE = re.compile(
     r'''^\(?([0-9]{3})\)?[. -]?([0-9]{3})[. -]?([0-9]{4})$''')
-EMAIL_RE = re.compile( # Copied from Django EmailValidator source
-    r'''(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*'''
-    r'''|^"([\001-\010\013\014\016-\037!#-''' +
-    r'''\[\]-\177]|\\[\001-011\013\014\016-\177])*"'''
-    r''')@(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$''',
-    re.IGNORECASE)
-
 
 def get_db():
     """Opens a new database connection if there is none yet for the
@@ -81,14 +73,6 @@ def close_database(exception):
     top = _app_ctx_stack.top
     if hasattr(top, 'mysql_db'):
         top.mysql_db.close()
-
-
-def validate_email(email):
-    """Validates an email address to ensure it is a valid format, and returns
-       the email address in the correct format for our application.
-    """
-    rv = EMAIL_RE.search(email)
-    return None if rv is None else rv.group()
 
 
 def validate_phone_number(num):
@@ -413,13 +397,6 @@ def get_alarm_time(alarm_timedelta):
     return (datetime.min + alarm_timedelta).time()
 
 
-def alarm_is_recent(alarm_time):
-    now = datetime.utcnow()
-    if not (now.time() > alarm_time > (now - timedelta(seconds=7200)).time()):
-        return False
-    return True
-
-
 def get_next_run_datetime(alarm_time):
     now = datetime.utcnow()
     if alarm_time > now.time():
@@ -436,15 +413,6 @@ def get_next_run_datetime(alarm_time):
     return run_time
 
 
-def get_timezones():
-    return _master_timezone_list
-
-def validate_timezone(tz):
-    if tz in get_timezones():
-        return tz
-    return None
-
-
 def get_phone_id(phone_num):
     phone_info = query_db(
         'select phone_id from user_phones where phone_number=%s' % phone_num,
@@ -455,10 +423,11 @@ def get_phone_id(phone_num):
 
 def generate_join_message(new_number):
     #TODO
-    sched.send_message(
-        'Welcome to AlarmAway! To complete registration, please visit %s' % (
-        'JoeRoszkowski.com'), new_number
-    )
+    #sched.send_message(
+    #    'Welcome to AlarmAway! To complete registration, please visit %s' % (
+    #    'JoeRoszkowski.com'), new_number
+    #)
+    pass
 
 
 def get_recent_alarms(phone_id):
