@@ -13,8 +13,10 @@ from werkzeug import generate_password_hash, check_password_hash
 import constants
 from decorators import login_required
 import scheduler
-from forms import RegisterBeginForm, LoginForm, PhoneVerificationForm
-from forms import AddUserPhoneForm, FullRegisterForm, RegisterContinueForm
+from forms import (
+    RegisterBeginForm, LoginForm, PhoneVerificationForm, AddUserPhoneForm,
+    FullRegisterForm, RegisterContinueForm, AddUserAlarmForm
+)
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -738,28 +740,28 @@ def admin_panel():
 @login_required
 def new_alarm():
     user = g.user
-    if request.method == 'POST':
-        input_alarm = datetime.strptime(request.form['time'], '%H:%M')
-        input_phone = request.form['phone']
-        if not input_alarm:
-            flash('We have encountered an error processing your alarm.' +
-                ' Please try again.', 'error')
-        elif not input_phone:
-            flash('You must select a phone number to be associated with this ' +
-                'alarm.', 'error')
-        else:
-            user_tz=query_db("""
+    form = AddUserAlarmForm(request.form)
+    user_phones = get_user_phones(user['user_id'])
+    form.phone_number.choices = [
+        (phone['phone_id'], format_phone_number(phone['phone_number']))
+        for phone in user_phones]
+    if form.validate_on_submit():
+        user_alarm_time = datetime.strptime(form.alarm_time.data, '%H:%M')
+        user_tz = query_db("""
                 select up_value from user_properties
                 where up_user=%s and up_key=%s limit 1
                 """, (user['user_id'], 'user_tz'), one=True
-            )
-            input_alarm = get_utc(input_alarm.time(), user_tz['up_value'])
-            new_alarm_id = create_new_alarm(
-                user['user_id'], input_phone, input_alarm, active=True)
-            flash('Well Done! You set an alarm!', 'success')
-            return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
-    user_phones = get_user_phones(user['user_id'])
-    return render_template('add-new-alarm.html', user_phones=user_phones)
+        )
+        user_alarm_time = get_utc(user_alarm_time.time(), user_tz['up_value'])
+        new_alarm_id = create_new_alarm(
+                user['user_id'],
+                form.phone_number.data,
+                user_alarm_time,
+                active=True
+        )
+        flash('Well Done! You set an alarm!', 'success')
+        return redirect(url_for('set_alarm', alarm_id=new_alarm_id))
+    return render_template('new_alarm.html', form=form)
 
 
 @app.route('/alarm/remove/<alarm_id>')

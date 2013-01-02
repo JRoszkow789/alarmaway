@@ -9,6 +9,31 @@ def get_timezone_list():
     """
     return pytz.country_timezones('US')
 
+
+def populate_alarm_times():
+    """
+    """
+    alarm_times = [(None, 'Choose a time'),]
+    for hour in range(0, 24):
+        for minute in range(0, 60, 10):
+            alarm_times.append((
+                '%.2d:%.2d' % (hour, minute),
+                '%d:%.2d %.2s' % ((hour if hour <= 12 else hour - 12),
+                minute, ('AM' if hour < 12 else 'PM'))))
+    return alarm_times
+
+
+class AddUserAlarmForm(Form):
+    """
+    """
+    alarm_time = SelectField('Alarm time', [Required()],
+        choices=populate_alarm_times())
+    phone_number = SelectField('Phone number', [Required()], coerce=int)
+
+    def __repr__(self):
+        return '<forms.AddUserAlarmForm - phones: %s>' % self.phone_number.choices
+
+
 class RegisterBeginForm(Form):
     """A small form to begin user registration. Developed for the alarmaway
     homepage, it contains just two fields:
