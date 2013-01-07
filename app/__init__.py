@@ -73,6 +73,14 @@ def close_database(exception):
     if hasattr(top, 'mysql_db'):
         top.mysql_db.close()
 
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash('Error in the %s field - %s' % (
+                getattr(form, field).label.text,
+                error), 'error'
+            )
+
 
 def validate_phone_number(num):
     """Validates a phone number to ensure it is in a valid format and returns
@@ -521,6 +529,7 @@ def home():
             session['user_phone'] = phone_number
             session['user_tz'] = form.timezone.data
             return redirect(url_for('continue_registration'))
+    flash_errors(form)
     return render_template('index.html', form=form)
 
 
@@ -614,6 +623,7 @@ def registration():
                 id: %s, email: %s, phone_id: %s, tz_id: %s
                 """ % (new_user_id, user_email, new_phone_id, new_tz_id))
             return redirect(url_for('user_home'))
+        flash_errors(form)
     return render_template('registration.html', form=form)
 
 
