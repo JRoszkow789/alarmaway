@@ -1,6 +1,5 @@
 from __future__ import with_statement
 from datetime import datetime, timedelta, time
-import logging
 import random
 import re
 from flask import Flask, render_template, request, flash, redirect, \
@@ -11,7 +10,7 @@ import pytz
 import twilio.twiml
 from werkzeug import generate_password_hash, check_password_hash
 import constants
-from decorators import login_required
+from decorators import login_required, non_login_required
 import scheduler
 from forms import (
     RegisterBeginForm, LoginForm, PhoneVerificationForm, AddUserPhoneForm,
@@ -506,9 +505,8 @@ def server_error(error):
 
 
 @app.route('/', methods=['GET', 'POST'])
+@non_login_required()
 def home():
-    if 'user_id' in session:
-        return redirect(url_for('user_home'))
     form = RegisterBeginForm(request.form)
     if form.validate_on_submit():
         phone_number = validate_phone_number(form.phone_number.data)
@@ -529,6 +527,7 @@ def home():
 #TODO this is gonna need more error handling somewhere,
 #maybe try/except here, or handle errors in functions themselves?
 @app.route('/register2', methods=['GET', 'POST'])
+@non_login_required('You are already registered and logged in')
 def continue_registration():
     form = RegisterContinueForm(request.form)
     if form.validate_on_submit():
@@ -585,10 +584,8 @@ def alarm_response():
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@non_login_required('You are already registered and logged in')
 def registration():
-    if 'user_id' in session:
-        flash('Already logged in!')
-        return redirect(url_for('user_home'))
     form = FullRegisterForm(request.form)
     if form.validate_on_submit():
         user_phone_number = validate_phone_number(form.phone_number.data)
@@ -654,11 +651,10 @@ def user_home():
     )
 
 
+
 @app.route('/login', methods=['GET', 'POST'])
+@non_login_required('You are already logged in.')
 def login():
-    if 'user_id' in session:
-        flash('You are already logged in!', 'info')
-        return redirect(url_for('home'))
     form = LoginForm(request.form)
     if form.validate_on_submit():
         user = query_db('''select user_id, user_pw from users where

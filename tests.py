@@ -25,20 +25,24 @@ def initialize_test_db():
 class AlarmAwayTestCase(unittest.TestCase):
 
     def setUp(self):
+        print 'setUp::AlarmAwayTestCase starting...'
         initialize_test_db()
         self.db = get_db()
         alarmaway.app.config['TESTING'] = True
         self.app = alarmaway.app.test_client()
+        print 'setUp::AlarmAwayTestCase complete.'
 
     def tearDown(self):
         if self.db:
             self.db.close()
 
     def test_serverup(self):
+        print 'test_serverup::test'
         rv = self.app.get('/')
         assert rv.status_code == 200
 
     def test_no_current_user(self):
+        print 'test_no_current_user::STARTING'
         print self.app.get('/user/view')
 
 if __name__ == '__main__':
