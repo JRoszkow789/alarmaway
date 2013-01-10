@@ -3,22 +3,21 @@ from contextlib import closing
 from celery import Celery
 from datetime import timedelta
 import aa_comm
-from config import DB_HOST, DB_USER, DB_PW, DB_PORT, DATABASE
-from config import COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER, MSG1, MSG2, MSG3
-
 
 celery = Celery('scheduler')
+
+import celeryconfig
 celery.config_from_object('celeryconfig')
 
 
 def get_db():
     """Opens a new database connection"""
     mysql_db = MySQLdb.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        passwd=DB_PW,
-        port=DB_PORT,
-        db=DATABASE)
+        host=celeryconfig.DB_HOST,
+        user=celeryconfig.DB_USER,
+        passwd=celeryconfig.DB_PW,
+        port=celeryconfig.DB_PORT,
+        db=celeryconfig.DATABASE)
     return mysql_db
 
 
@@ -35,11 +34,11 @@ class AlarmScheduler:
     def __init__(self):
         self.alarm_messages = [
             ('call', None),
-            ('text', MSG1),
+            ('text', celeryconfig.MSG1),
             ('call', None),
-            ('text', MSG2),
+            ('text', celeryconfig.MSG2),
             ('call', None),
-            ('text', MSG3)]
+            ('text', celeryconfig.MSG3)]
 
     def set_alarm(self, ref_id, alarm_time, phone_number):
         alarm_asyncs = []
@@ -76,7 +75,9 @@ class AlarmScheduler:
 @celery.task
 def send_user_call(number):
     comm_client = aa_comm.AlarmAwayTwilioClient(
-        COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER)
+        celeryconfig.COMM_ACCOUNT_ID, celeryconfig.COMM_AT,
+        celeryconfig.COMM_FROM_NUMBER
+    )
     comm_client.make_call(number,
         'http://canopyinnovation.com/twresp.xml')
 
@@ -84,7 +85,9 @@ def send_user_call(number):
 @celery.task
 def send_user_text(msg, number):
     comm_client = aa_comm.AlarmAwayTwilioClient(
-        COMM_ACCOUNT_ID, COMM_AT, COMM_FROM_NUMBER)
+        celeryconfig.COMM_ACCOUNT_ID, celeryconfig.COMM_AT,
+        celeryconfig.COMM_FROM_NUMBER
+    )
     comm_client.send_sms(number, msg)
 
 @celery.task

@@ -16,7 +16,6 @@ from . import scheduler
 from .decorators import login_required, non_login_required
 from .forms import (AddUserAlarmForm, AddUserPhoneForm, FullRegisterForm,
     LoginForm, RegisterBeginForm, RegisterContinueForm, PhoneVerificationForm)
-import config
 
 
 app = Flask(__name__)
@@ -25,7 +24,7 @@ sched = scheduler.AlarmScheduler()
 
 
 PHONE_RE = re.compile(
-    r'''^\(?([0-9]{3})\)?[. -]?([0-9]{3})[. -]?([0-9]{4})$''')
+    r"^\(?([0-9]{3})\)?[. -]?([0-9]{3})[. -]?([0-9]{4})$")
 
 def get_db():
     """Opens a new database connection if there is none yet for the
@@ -39,9 +38,9 @@ def get_db():
             passwd=app.config['DB_PW'],
             port=app.config['DB_PORT'],
             db=app.config['DATABASE'],
-            cursorclass=MySQLdb.cursors.DictCursor)
+            cursorclass=MySQLdb.cursors.DictCursor,
+            )
     return top.mysql_db
-
 
 
 def query_db(query, args=(), one=False):
@@ -56,7 +55,6 @@ def query_db(query, args=(), one=False):
     rv = cur.fetchone() if one else cur.fetchall()
     return rv
 
-
 @app.before_request
 def before_request():
     g.user = None
@@ -65,8 +63,7 @@ def before_request():
             select user_id, user_email, user_role, user_status, user_register
             from users where user_id=%s limit 1
             """, session['user_id'], one=True
-        )
-
+            )
 
 @app.teardown_appcontext
 def close_database(exception):
@@ -81,8 +78,7 @@ def flash_errors(form):
             flash('Error in the %s field - %s' % (
                 getattr(form, field).label.text,
                 error), 'error'
-            )
-
+                )
 
 def validate_phone_number(num):
     """Validates a phone number to ensure it is in a valid format and returns
@@ -92,25 +88,20 @@ def validate_phone_number(num):
     return None if rv is None else (
         rv.group(1) + rv.group(2) + rv.group(3))
 
-
 def format_alarm_time(alarm_time):
     """Formats a datetime.time object for human-friendly output.
        Used within Jinja templates.
     """
     return alarm_time.strftime('%I:%M %p')
 
-
 def format_alarm_status(status):
     return 'ACTIVE' if status else 'INACTIVE'
-
 
 def format_user_status(status):
     return constants.USER_STATUS[status]
 
-
 def format_user_date(user_date):
     return user_date.strftime('%b %d, %Y')
-
 
 def format_phone_number(num):
     return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
@@ -124,7 +115,6 @@ def verify_user_phone(user_id):
         'update user_phones set phone_verified=%s where phone_owner=%s',
         (1, user_id))
     db.commit()
-
 
 def create_new_user(email, pw_hash):
     """Creates a new user and returns the newly created user's id.
@@ -148,7 +138,6 @@ def get_user_id(email_address):
         return user_info['user_id']
     return None
 
-
 def add_new_user_timezone(new_user_id, user_tz):
     """Adds a timezone to the database as a user_property.
     """
@@ -167,14 +156,12 @@ def add_new_user_timezone(new_user_id, user_tz):
     db.commit()
     return new_tz_id
 
-
 def generate_verification_code():
     """Generates a new (pseudo)random 7 digit number string used primarily
     for passing to user and verifying new phone numbers.
     """
     new_ver_code = str(random.randint(1000000, 9999999))
     return new_ver_code
-
 
 def send_phone_verification(phone_num, ver_code):
     sched.send_message((
@@ -198,7 +185,6 @@ def create_new_phone(owner, num, verified=False):
         return new_phone_id
     return None
 
-
 def get_user_phones(user_id, verified=False):
     """Helper method that returns a list of all user_phone objects currently
     in the program's database, for which the phone's owner is the supplied
@@ -219,7 +205,6 @@ def get_user_phones(user_id, verified=False):
         )
     return phones
 
-
 def get_phone_number(request_phone_id):
     """Retrieves a record from the database containing a phone number for
        the requested phone_id. If a record is found, just the value of
@@ -231,7 +216,6 @@ def get_phone_number(request_phone_id):
         return rv['phone_number']
     return None
 
-
 def remove_user_phone(user_id, phone_id):
     db = get_db()
     cur = db.cursor()
@@ -241,7 +225,6 @@ def remove_user_phone(user_id, phone_id):
         return False
     db.commit()
     return True
-
 
 def get_user_alarms(user_id, active_only=True):
     if active_only:
@@ -258,7 +241,6 @@ def get_user_alarms(user_id, active_only=True):
         )
     return alarms
 
-
 def get_alarm_status(alarm_id):
     """Takes an alarm_id as a parameter and looks up the given alarm's
        corresponding alarm events. Returns 0 or 1, representing the alarm
@@ -269,7 +251,6 @@ def get_alarm_status(alarm_id):
         where event_owner=%s and event_status=%s limit 1
         """, (alarm_id, 1), one=True)
     return 0 if not active_alarm_events else 1
-
 
 def create_new_alarm(user_id, phone_id, alarm_time, active=False):
     """Creates a new alarm with the given input and inserts it into the
@@ -286,7 +267,6 @@ def create_new_alarm(user_id, phone_id, alarm_time, active=False):
     db.commit()
     return new_alarm_id
 
-
 def remove_user_alarm(alarm_id):
     db = get_db()
     cur = db.cursor()
@@ -296,7 +276,6 @@ def remove_user_alarm(alarm_id):
         return True
     return False
 
-
 def verify_alarm_ownership(user_id, alarm_id):
     rv = query_db("""
         select alarm_id, alarm_owner from alarms where
@@ -305,13 +284,12 @@ def verify_alarm_ownership(user_id, alarm_id):
     )
     return False if not rv else True
 
-
 def set_user_alarm(alarm_id):
     alarm_info = query_db("""
         select alarm_id, alarm_phone, alarm_time, alarm_active
         from alarms where alarm_id=%s
         """, alarm_id, one=True
-    )
+        )
     if not alarm_info['alarm_active']:
         app.logger.debug('set_user_alarm FAIL -- alarm %s inactive', alarm_id)
         return False
@@ -544,16 +522,25 @@ def continue_registration():
         #Form validates the format of the email address, but we need to check
         #that it does not already exist in our system
         user_email = form.email.data
-        if get_user_id(user_email) is not None:
-            flash('That email address is already registered. Sign in instead.')
+        if get_user_id(user_email):
+            flash(
+                'That email address is already registered. Sign in instead.',
+                'info',
+                )
             return redirect(url_for('login'))
 
         new_user_id = create_new_user(
-            user_email, generate_password_hash(form.password.data))
+            user_email,
+            generate_password_hash(form.password.data)
+            )
         new_tz_id = add_new_user_timezone(
-            new_user_id, session.pop('user_tz', None))
+            new_user_id,
+            session.pop('user_tz', None)
+            )
         new_phone_id = create_new_phone(
-            new_user_id, session.pop('user_phone', None))
+            new_user_id,
+            session.pop('user_phone', None)
+            )
 
         #User, phone, timezone all successfully added. 'Login' the user 
         #by storing their new id in session, and direct to new account page
