@@ -1,4 +1,3 @@
-passwords
 fabfile.py
 host-files/*
 email_config.py
@@ -9,5 +8,4 @@ run_server.*
 config.*
 shell.*
 *.pyc
-*.*~
-*/*.pyc
+*.bak
