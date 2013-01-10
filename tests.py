@@ -1,5 +1,5 @@
 import os
-import alarmaway
+from app import app
 import unittest
 from contextlib import closing
 import MySQLdb as msdb
@@ -7,11 +7,11 @@ import MySQLdb as msdb
 
 def get_db():
     db = msdb.connect(
-        host=alarmaway.app.config['TEST_DB_HOST'],
-        user=alarmaway.app.config['TEST_DB_USER'],
-        passwd=alarmaway.app.config['TEST_DB_PW'],
-        port=alarmaway.app.config['TEST_DB_PORT'],
-        db=alarmaway.app.config['TEST_DATABASE'],
+        host=app.config['TEST_DB_HOST'],
+        user=app.config['TEST_DB_USER'],
+        passwd=app.config['TEST_DB_PW'],
+        port=app.config['TEST_DB_PORT'],
+        db=app.config['TEST_DATABASE'],
         cursorclass=msdb.cursors.DictCursor)
     return db
 
@@ -28,8 +28,8 @@ class AlarmAwayTestCase(unittest.TestCase):
         print 'setUp::AlarmAwayTestCase starting...'
         initialize_test_db()
         self.db = get_db()
-        alarmaway.app.config['TESTING'] = True
-        self.app = alarmaway.app.test_client()
+        app.config['TESTING'] = True
+        self.app = app.test_client()
         print 'setUp::AlarmAwayTestCase complete.'
 
     def tearDown(self):
@@ -43,7 +43,9 @@ class AlarmAwayTestCase(unittest.TestCase):
 
     def test_no_current_user(self):
         print 'test_no_current_user::STARTING'
-        print self.app.get('/user/view')
+        rv = self.app.get('/user/view')
+        assert rv.status_code == 302
+
 
 if __name__ == '__main__':
     unittest.main()
