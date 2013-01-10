@@ -1,21 +1,22 @@
-from __future__ import with_statement
+from __future__ import (absolute_import, division, print_function,
+    unicode_literals)
 from datetime import datetime, timedelta, time
+import logging
 import random
 import re
-from flask import Flask, render_template, request, flash, redirect, \
-    g, url_for, session, _app_ctx_stack
+from flask import (_app_ctx_stack, flash, Flask, g, redirect, render_template,
+    request, session, url_for)
 import MySQLdb
 import MySQLdb.cursors
 import pytz
 import twilio.twiml
 from werkzeug import generate_password_hash, check_password_hash
-import constants
-from decorators import login_required, non_login_required
-import scheduler
-from forms import (
-    RegisterBeginForm, LoginForm, PhoneVerificationForm, AddUserPhoneForm,
-    FullRegisterForm, RegisterContinueForm, AddUserAlarmForm
-)
+from . import constants
+from . import scheduler
+from .decorators import login_required, non_login_required
+from .forms import (AddUserAlarmForm, AddUserPhoneForm, FullRegisterForm,
+    LoginForm, RegisterBeginForm, RegisterContinueForm, PhoneVerificationForm)
+
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -132,12 +133,11 @@ def create_new_user(email, pw_hash):
     cur.execute("""
         insert into users (user_email, user_pw, user_role, user_status)
         values (%s, %s, %s, %s)
-        """, (email, pw_hash, constants.USER, constants.FREE)
-    )
+        """, (email, pw_hash, constants.USER, constants.FREE
+    ))
     new_user_id = cur.lastrowid
     db.commit()
     return new_user_id
-
 
 def get_user_id(email_address):
     """Looks up a user by their email address, and returns the user's ID."""
