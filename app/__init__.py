@@ -16,6 +16,7 @@ from . import scheduler
 from .decorators import login_required, non_login_required
 from .forms import (AddUserAlarmForm, AddUserPhoneForm, FullRegisterForm,
     LoginForm, RegisterBeginForm, RegisterContinueForm, PhoneVerificationForm)
+import config
 
 
 app = Flask(__name__)
