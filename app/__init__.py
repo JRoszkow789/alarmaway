@@ -1,7 +1,6 @@
 from __future__ import (absolute_import, division, print_function,
     unicode_literals)
-from datetime import datetime, timedelta, time
-import logging
+from datetime import datetime, timedelta
 import random
 import re
 from flask import (_app_ctx_stack, flash, Flask, g, redirect, render_template,
@@ -61,8 +60,9 @@ def before_request():
     if 'user_id' in session:
         g.user = query_db("""
             select user_id, user_email, user_role, user_status, user_register
-            from users where user_id=%s limit 1
-            """, session['user_id'], one=True
+            from users where user_id=%s limit 1""",
+            session['user_id'],
+            one=True,
             )
 
 @app.teardown_appcontext
@@ -75,10 +75,9 @@ def close_database(exception):
 def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
-            flash('Error in the %s field - %s' % (
-                getattr(form, field).label.text,
-                error), 'error'
-                )
+            field_name = getattr(form, field).label.text
+            error_message = "Error in the %s field - %s" % (field_name, error)
+            flash(error_message, 'error')
 
 def validate_phone_number(num):
     """Validates a phone number to ensure it is in a valid format and returns
@@ -113,7 +112,8 @@ def verify_user_phone(user_id):
     cur = db.cursor()
     cur.execute(
         'update user_phones set phone_verified=%s where phone_owner=%s',
-        (1, user_id))
+        (1, user_id)
+        )
     db.commit()
 
 def create_new_user(email, pw_hash):
@@ -123,8 +123,11 @@ def create_new_user(email, pw_hash):
     cur = db.cursor()
     cur.execute("""
         insert into users (user_email, user_pw, user_role, user_status)
-        values (%s, %s, %s, %s)
-        """, (email, pw_hash, constants.USER, constants.FREE
+        values (%s, %s, %s, %s)""", (
+        email,
+        pw_hash,
+        constants.USER,
+        constants.FREE,
     ))
     new_user_id = cur.lastrowid
     db.commit()
@@ -132,8 +135,11 @@ def create_new_user(email, pw_hash):
 
 def get_user_id(email_address):
     """Looks up a user by their email address, and returns the user's ID."""
-    user_info = query_db('select user_id from users where user_email = %s',
-        email_address, one=True)
+    user_info = query_db(
+        'select user_id from users where user_email = %s',
+        email_address,
+        one=True,
+        )
     if user_info:
         return user_info['user_id']
     return None
@@ -408,13 +414,12 @@ def get_phone_id(phone_num):
 
 
 def generate_join_message(new_number):
-    #TODO
-    #sched.send_message(
-    #    'Welcome to AlarmAway! To complete registration, please visit %s' % (
-    #    'JoeRoszkowski.com'), new_number
-    #)
-    pass
-
+    # TODO This needs to be implemented!
+    app.logger.warn("""
+        Function Not implemented
+        generate_join_message called with number %s"""
+        % new_number
+        )
 
 def get_recent_alarms(phone_id):
     cur_alarms = [
@@ -479,9 +484,10 @@ def schedule_alarm(alarm_id):
     return False
 
 
-
 @app.errorhandler(404)
 def page_not_found(error):
+    path = request.path
+    app.logger.info('ERROR:: %s\nPath: %s' % (error, path))
     return render_template('404.html'), 404
 
 
