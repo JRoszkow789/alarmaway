@@ -2,7 +2,6 @@ from __future__ import (absolute_import, division, print_function,
     unicode_literals)
 from datetime import datetime, timedelta
 import random
-import re
 from flask import (_app_ctx_stack, flash, Flask, g, redirect, render_template,
     request, session, url_for)
 import MySQLdb
@@ -13,7 +12,7 @@ from werkzeug import generate_password_hash, check_password_hash
 from . import constants
 from . import scheduler
 from .decorators import login_required, non_login_required
-from .forms import (AddUserAlarmForm, AddUserPhoneForm, FullRegisterForm,
+from .forms import (AddUserAlarmForm, PhoneForm, FullRegisterForm,
     LoginForm, RegisterBeginForm, RegisterContinueForm, PhoneVerificationForm)
 
 
@@ -22,8 +21,6 @@ app.config.from_object('config')
 sched = scheduler.AlarmScheduler()
 
 
-PHONE_RE = re.compile(
-    r"^\(?([0-9]{3})\)?[. -]?([0-9]{3})[. -]?([0-9]{4})$")
 
 def get_db():
     """Opens a new database connection if there is none yet for the
@@ -77,14 +74,6 @@ def flash_errors(form):
             field_name = getattr(form, field).label.text
             error_message = "Error in the %s field - %s" % (field_name, error)
             flash(error_message, 'error')
-
-def validate_phone_number(num):
-    """Validates a phone number to ensure it is in a valid format and returns
-       the phone number in the correct format for our application.
-    """
-    rv = PHONE_RE.search(num)
-    return None if rv is None else (
-        rv.group(1) + rv.group(2) + rv.group(3))
 
 def format_alarm_time(alarm_time):
     """Formats a datetime.time object for human-friendly output.
@@ -501,10 +490,8 @@ def server_error(error):
 def home():
     form = RegisterBeginForm(request.form)
     if form.validate_on_submit():
-        phone_number = validate_phone_number(form.phone_number.data)
-        if not phone_number:
-            flash('Please enter a valid phone number.', 'error')
-        elif get_phone_id(phone_number):
+        phone_number = form.phone_number.data
+        if get_phone_id(phone_number):
             flash('Sorry, that phone number is already registered.', 'info')
         else:
             uv_code = generate_verification_code()
@@ -590,12 +577,9 @@ def alarm_response():
 def registration():
     form = FullRegisterForm(request.form)
     if form.validate_on_submit():
-        user_phone_number = validate_phone_number(form.phone_number.data)
+        user_phone_number = form.phone_number.data
         user_email = form.email.data
-        user_timezone = form.timezone.data
-        if not user_phone_number:
-            flash("Please enter a valid phone number", 'error')
-        elif get_phone_id(user_phone_number):
+        if get_phone_id(user_phone_number):
             flash('That number is already associated with an account.',
                     'error')
         elif get_user_id(user_email):
@@ -607,7 +591,7 @@ def registration():
             send_phone_verification(user_phone_number, uv_code)
             new_user_id = create_new_user(
                 user_email, generate_password_hash(form.password.data))
-            new_tz_id = add_new_user_timezone(new_user_id, user_timezone)
+            new_tz_id = add_new_user_timezone(new_user_id, form.timezone.data)
             new_phone_id = create_new_phone(new_user_id, user_phone_number)
 
             session['user_id'] = new_user_id
@@ -796,12 +780,10 @@ def new_phone():
         flash('You currently have an unverified phone. Please verify first.',
             'error')
         return redirect(url_for('user_home'))
-    form = AddUserPhoneForm(request.form)
+    form = PhoneForm(request.form)
     if form.validate_on_submit():
-        phone_number = validate_phone_number(form.phone_number.data)
-        if not phone_number:
-            flash('You must enter a valid phone number', 'error')
-        elif get_phone_id(phone_number):
+        phone_number = form.phone_number.data
+        if get_phone_id(phone_number):
             flash('That phone number is already associated with an account.',
                 'error')
         else:
