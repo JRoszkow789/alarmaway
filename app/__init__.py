@@ -41,7 +41,6 @@ def get_db():
             )
     return top.mysql_db
 
-
 def query_db(query, args=(), one=False):
     """Helper method for establishing db connection and executing query.
        Passes query directly to a mysql cursor object along with supplied args.

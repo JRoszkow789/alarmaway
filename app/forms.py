@@ -1,8 +1,40 @@
-import pytz
+import re
 
 from flask.ext.wtf import Form, SelectField, Required, Email, PasswordField
 from flask.ext.wtf import TextField
 from flask.ext.wtf.html5 import TelField
+
+import pytz
+
+PHONE_RE = re.compile(
+    r"^\(?([0-9]{3})\)?[. -]?([0-9]{3})[. -]?([0-9]{4})$")
+
+
+def validate_number(num):
+    """Validates a phone number to ensure it is in a valid format and returns
+       the phone number in the correct format for our application.
+    """
+    rv = PHONE_RE.search(num)
+    try:
+        return rv.group(1) + rv.group(2) + rv.group(3)
+    except AttributeError:
+        return False
+
+class PhoneForm(Form):
+    phone_number = TelField('Phone number', [Required(),])
+
+    def validate(self):
+        rv = Form.validate(self)
+        if not rv:
+            return False
+
+        formatted_number = validate_number(self.phone_number.data)
+        if not formatted_number:
+            self.phone_number.errors.append('Not a valid phone number')
+            return False
+
+        self.phone_number.data = formatted_number
+        return True
 
 def get_timezone_list():
     """Returns a list of US timezones as indicated in the pytz module.
@@ -34,7 +66,7 @@ class AddUserAlarmForm(Form):
         return '<forms.AddUserAlarmForm - phones: %s>' % self.phone_number.choices
 
 
-class RegisterBeginForm(Form):
+class RegisterBeginForm(PhoneForm):
     """A small form to begin user registration. Developed for the alarmaway
     homepage, it contains just two fields:
 
@@ -45,7 +77,7 @@ class RegisterBeginForm(Form):
                     timezones from which a user may choose. Timeszones are
                     populated from the get_timezone_list function.
     """
-    phone_number = TelField('Phone Number', [Required()])
+    #phone_number = TelField('Phone Number', [Required()])
     timezone = SelectField('Timezone', [Required(),],
         choices=([(None, 'Choose your timezone...'),]
             + [(timezone, timezone) for timezone in get_timezone_list()]))
@@ -58,12 +90,11 @@ class RegisterContinueForm(Form):
     password = PasswordField('Create a password', [Required()])
 
 
-class FullRegisterForm(Form):
+class FullRegisterForm(PhoneForm):
     """
     """
     email = TextField('Email address', [Required(), Email()])
     password = PasswordField('Password', [Required(),])
-    phone_number = TelField('Phone Number', [Required()])
     timezone = SelectField('Timezone', [Required(),],
         choices=([(None, 'Choose your timezone...'),]
             + [(timezone, timezone) for timezone in get_timezone_list()]))
@@ -83,6 +114,3 @@ class PhoneVerificationForm(Form):
     attempt.
     """
     verification_code = TextField('Verification code', [Required(),])
-
-class AddUserPhoneForm(Form):
-    phone_number = TelField('Phone number', [Required(),])
