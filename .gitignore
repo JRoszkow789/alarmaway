@@ -4,6 +4,7 @@ email_config.py
 *.wsgi
 aa_worker_state
 *.log
+*.db
 run_server.*
 config.*
 shell.*
