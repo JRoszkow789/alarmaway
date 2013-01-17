@@ -18,6 +18,41 @@ from .forms import (AddUserAlarmForm, PhoneForm, FullRegisterForm,
 
 app = Flask(__name__)
 app.config.from_object('config')
+
+if not app.debug:
+    import logging
+    try:
+        log_file = app.config['LOG_FILE']
+    except KeyError:
+        log_file = '%s.log' % __name__
+
+    formatter = logging.Formatter('''
+        Message type:       %(levelname)s
+        Location:           %(pathname)s:%(lineno)d
+        Module:             %(module)s
+        Function:           %(funcName)s
+        Time:               %(asctime)s
+
+        Message:
+
+        %(message)s
+        ''')
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(formatter)
+
+    # Ensure a root logger exists
+    root_logger = logging.getLogger('root')
+    root_logger.setLevel(logging.DEBUG)
+
+    loggers = [
+        app.logger,
+        root_logger,
+        logging.getLogger('sqlalchemy'),
+        ]
+    for logger in loggers:
+        logger.addHandler(file_handler)
+
+
 sched = scheduler.AlarmScheduler()
 
 
