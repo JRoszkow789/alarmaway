@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import random
 from flask import (_app_ctx_stack, flash, Flask, g, redirect, render_template,
     request, session, url_for)
+from flask.ext.sqlalchemy import SQLAlchemy
 import MySQLdb
 import MySQLdb.cursors
 import pytz
@@ -53,55 +54,62 @@ if not app.debug:
         logger.addHandler(file_handler)
 
 
+db = SQLAlchemy(app)
 sched = scheduler.AlarmScheduler()
 
+from app.alarms.models import Alarm
+from app.phones.models import Phone
+from app.users.models import User
+from app.phones.views import mod as phonesModule
+app.register_blueprint(phonesModule)
 
 
-def get_db():
-    """Opens a new database connection if there is none yet for the
-    current application context.
-    """
-    top = _app_ctx_stack.top
-    if not hasattr(top, 'mysql_db'):
-        top.mysql_db = MySQLdb.connect(
-            host=app.config['DB_HOST'],
-            user=app.config['DB_USER'],
-            passwd=app.config['DB_PW'],
-            port=app.config['DB_PORT'],
-            db=app.config['DATABASE'],
-            cursorclass=MySQLdb.cursors.DictCursor,
-            )
-    return top.mysql_db
-
-def query_db(query, args=(), one=False):
-    """Helper method for establishing db connection and executing query.
-       Passes query directly to a mysql cursor object along with supplied args.
-       By default, this function returns the list of rows returned by the
-       cursor. If the one parameter is set to True, it will return only the
-       first result.
-    """
-    cur = get_db().cursor()
-    cur.execute(query, args)
-    rv = cur.fetchone() if one else cur.fetchall()
-    return rv
+#def get_db():
+#    """Opens a new database connection if there is none yet for the
+#    current application context.
+#    """
+#    top = _app_ctx_stack.top
+#    if not hasattr(top, 'mysql_db'):
+#        top.mysql_db = MySQLdb.connect(
+#            host=app.config['DB_HOST'],
+#            user=app.config['DB_USER'],
+#            passwd=app.config['DB_PW'],
+#            port=app.config['DB_PORT'],
+#            db=app.config['DATABASE'],
+#            cursorclass=MySQLdb.cursors.DictCursor,
+#            )
+#    return top.mysql_db
+#
+#def query_db(query, args=(), one=False):
+#    """Helper method for establishing db connection and executing query.
+#       Passes query directly to a mysql cursor object along with supplied args.
+#       By default, this function returns the list of rows returned by the
+#       cursor. If the one parameter is set to True, it will return only the
+#       first result.
+#    """
+#    cur = get_db().cursor()
+#    cur.execute(query, args)
+#    rv = cur.fetchone() if one else cur.fetchall()
+#    return rv
 
 @app.before_request
 def before_request():
     g.user = None
     if 'user_id' in session:
-        g.user = query_db("""
-            select user_id, user_email, user_role, user_status, user_register
-            from users where user_id=%s limit 1""",
-            session['user_id'],
-            one=True,
-            )
+        g.user = User.query.filter_by(id=session['user_id']).first()
+        #g.user = query_db("""
+        #    select user_id, user_email, user_role, user_status, user_register
+        #    from users where user_id=%s limit 1""",
+        #    session['user_id'],
+        #    one=True,
+        #    )
 
-@app.teardown_appcontext
-def close_database(exception):
-    """Closes the database again at the end of the request."""
-    top = _app_ctx_stack.top
-    if hasattr(top, 'mysql_db'):
-        top.mysql_db.close()
+#@app.teardown_appcontext
+#def close_database(exception):
+#    """Closes the database again at the end of the request."""
+#    top = _app_ctx_stack.top
+#    if hasattr(top, 'mysql_db'):
+#        top.mysql_db.close()
 
 def flash_errors(form):
     for field, errors in form.errors.items():
@@ -802,6 +810,11 @@ def update_alarm(alarm_id):
         return redirect(url_for('user_home'))
     flash('Page still under construction', 'info')
     return redirect(url_for('user_home'))
+
+
+######################################################
+## PHONE VIEWS 
+######################################################
 
 
 @app.route('/phone/new', methods=['GET', 'POST'])

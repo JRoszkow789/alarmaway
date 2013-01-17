@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="span6 offset3 well">
+  <form action="{{ url_for('phones.add_phone') }}" method="POST">
+    
+    {{ form.csrf_token }}
+
+    <p>
+      {{ form.phone_number.label(class="strong") }}
+      {{ form.phone_number }}
+    </p>
+
+    <p>
+      {{ form.timezone.label(class="strong") }}
+      {{ form.timezone }}
+    </p>
+
+    <input type="submit" class="btn btn-primary" value="submit">
+  </form>
+{% endblock %}
