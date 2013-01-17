@@ -1,5 +1,4 @@
-from __future__ import (absolute_import, division, print_function,
-    unicode_literals)
+from __future__ import absolute_import, division, unicode_literals
 from datetime import datetime, timedelta
 import random
 from flask import (_app_ctx_stack, flash, Flask, g, redirect, render_template,
@@ -57,12 +56,11 @@ if not app.debug:
 db = SQLAlchemy(app)
 sched = scheduler.AlarmScheduler()
 
-from app.alarms.models import Alarm
-from app.phones.models import Phone
 from app.users.models import User
 from app.phones.views import mod as phonesModule
 app.register_blueprint(phonesModule)
-
+from app.users.views import mod as usersModule
+app.register_blueprint(usersModule)
 
 #def get_db():
 #    """Opens a new database connection if there is none yet for the

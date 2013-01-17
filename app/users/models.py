@@ -15,7 +15,7 @@ class User(db.Model):
     status = db.Column(db.SmallInteger, default=USER.FREE)
     role = db.Column(db.SmallInteger, default=USER.USER)
 
-    def __init__(self, name, email=None, password=None, timezone=None):
+    def __init__(self, name=None, email=None, password=None, timezone=None):
         self.name = name
         self.email = email
         self.password = password
