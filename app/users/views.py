@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 import logging
 from werkzeug import check_password_hash, generate_password_hash
 
-from app import db
+from app import db, sched
 from app.utils import flash_errors, generate_verification_code
 from .decorators import login_required, non_login_required
 from app.users.forms import FullRegisterForm, LoginForm
@@ -15,6 +15,15 @@ from ..phones.forms import PhoneVerificationForm
 
 mod = Blueprint('users', __name__, url_prefix='/users')
 logger = logging.getLogger('root')
+
+#TODO This doesnt belong here. Basically just a stub for now to abstract
+#this functionality of of views themselves.
+def process_phone_verification(phone_number, verification_code):
+    sched.send_message(
+        'Welcome to AlarmAway! Your Verification code is %s'
+        % verification_code,
+        phone_number,
+        )
 
 @mod.route('/register', methods=['GET', 'POST'])
 @non_login_required(alert='Already registered')
@@ -60,12 +69,14 @@ def register():
                 "Number already associated with an account."
                 )
             #TODO this needs to be redirect(phones.add page or something
+            # Although the phone add was unsucessful, the user was already
+            # added to the database. This situation needs to be handled.
             session['user_id'] = new_user.id
             flash_errors(form)
             return redirect(url_for('phones.add'))
 
         verification_code = generate_verification_code()
-        #TODO manager.process_verification(verification_code, Phone.number)
+        process_phone_verification(new_phone.number, verification_code)
         session['verification_code'] = verification_code
         session['user_id'] = new_user.id
 
@@ -95,13 +106,6 @@ def home():
         verify_phone=need_verify_phone,
         form=form
         )
-    #info_msg = ("""
-    #    VIEW NOT IMPLEMENTED :: users.home
-    #    user_id: %s, method type: %s"""
-    #    % (user.id, request.method)
-    #    )
-    #logger.debug(info_msg)
-    #return info_msg
 
 @mod.route('/account')
 @login_required
@@ -136,5 +140,6 @@ def logout():
     """Standard Logout view. Clears the applications data from session and
     Logs the user out.
     """
-    session.pop('verification_code')
-    session.pop('user_id')
+    session.pop('verification_code', None)
+    session.pop('user_id', None)
+    return redirect(url_for('home'))

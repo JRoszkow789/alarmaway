@@ -12,7 +12,7 @@
     Good Morning
 {% endblock %}
 {% block content %}
-<div class="row well well-large major-container">
+<div class="row zero-row">
   <div class="span5 t-center">
     <h4> 
       Experience a revolutionary movement to simplify your morning
@@ -29,39 +29,6 @@
   </div>
   <div class="span6 t-center faded-insert">
     <h4 class="t-center header-dark">Create an account to manage your morning</h4>
-    {% with success_messages = get_flashed_messages(category_filter=['success']) %}
-  {% if success_messages %}
-  <div class="alert alert-success">
-    <button type="button" data-dismiss="alert" class="close">x</button>
-    <h4>Well Done!</h4>
-    {% for success_message in success_messages %}
-      <p>{{ success_message }}</p>
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endwith %}
-  {% with error_messages = get_flashed_messages(category_filter=['error']) %}
-    {% if error_messages %}
-    <div class="alert alert-error">
-      <button type="button" data-dismiss="alert" class="close">x</button>
-      <h4>An error has occurred...</h4>
-      {% for error_message in error_messages %}
-        <p>{{ error_message }}</p>
-      {% endfor %}
-    </div>
-    {% endif %}
-  {% endwith %}
-  {% with info_messages = get_flashed_messages() %}
-    {% if info_messages %}
-    <div class="alert alert-info">
-      <button type="button" data-dismiss="alert" class="close">x</button>
-      <h4>More information</h4>
-      {% for info_message in info_messages %}
-        <p>{{ info_message }}</p>
-      {% endfor %}
-    </div>
-    {% endif %}
-  {% endwith %}
     <form action="{{ url_for('users.register') }}" method="POST">
       {{ form.csrf_token }}
       <label class="header-dark">

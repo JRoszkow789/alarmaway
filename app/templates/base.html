@@ -49,17 +49,17 @@
 
 <body class="bg-dark-grid">
 
-<!-- Top Meta-Nav bar. Can be overridden if necessary with block meta_nav. -->
+<!-- Top Nav bar. Can be overridden if necessary with block meta_nav. -->
 {% block meta_nav %}
   <div class="navbar aa-nav">
     <div class="navbar-inner aa-nav-inner">
     {% block meta_nav_content %}
       {% if session.user_id %}
-        <a class="btn btn-primary" href="{{ url_for('logout') }}">Logout</a>
-        <a class="btn btn-warning" href="{{ url_for('user_home') }}">Your Account</a>
+        <a class="btn btn-primary" href="{{ url_for('users.logout') }}">Logout</a>
+        <a class="btn btn-warning" href="{{ url_for('users.home') }}">Your Account</a>
       {% else %}
-        <a class="btn btn-primary" href="{{ url_for('login') }}">Sign In</a>
-        <a class="btn btn-warning" href="{{ url_for('registration') }}">Sign Up</a>
+        <a class="btn btn-primary" href="{{ url_for('users.login') }}">Sign In</a>
+        <a class="btn btn-warning" href="{{ url_for('users.register') }}">Sign Up</a>
       {% endif %}
     {% endblock %}
     </div>
@@ -89,11 +89,64 @@
   </div>
 <!-- End hero header area. -->
 
-<!-- Begin Main Content Area. -->
-  <div class="container">
+<!-- Begin Main Container Area. -->
+{% block container %}
+<div class="container">
+  <div class="row well well-large major-container">
+    {% block flasher %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="row zero-row">
+            <div class="alert">
+              <button type="button" data-dismiss="alert" class="close">
+                x
+              </button>
+              <h3 class="text-left">Your Messages</h3>
+              <ul class="unstyled">
+                <!-- Display error messages in red, with a red 'Oops...' badge. -->
+                {% for category, msg in messages %}
+                  {% if category=='error' %}
+                    <li>
+                      <span class="label label-important">Oops...</span>
+                      <span class="text-error">{{ msg }}</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+
+                <!-- Display success messages in green, with a green success badge. -->
+                {% for category, msg in messages %}
+                  {% if category=='success' %}
+                    <li>
+                      <span class="label label-success">Success!</span>
+                      <span class="text-success">{{ msg }}</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+ 
+                <!-- Display any other messages in blue, with a blue info badge. -->
+                {% for category, msg in messages %}
+                  {% if category not in ['error', 'success'] %}
+                    <li>
+                      <span class="label label-info">Info</span>
+                      <span class="text-info">{{ msg }}</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+      {% endwith %}
+    {% endblock %}
+    <!-- End Flasher Area -->
+
+    <!-- Begin Main Content Area -->
     {% block content %}{% endblock %}
+    <!-- End Main Content Area -->
   </div>
-<!-- End Main Content Area -->
+</div>
+{% endblock %}
+<!-- End Main Container -->
 
 <!-- Begin Footer Navbar -->
 <div id="footer">
@@ -102,7 +155,7 @@
         <a href="{{ url_for('home') }}" class="brand">Alarm Away</a>
         <ul class="nav">
           <li class="active"><a href="{{ url_for('home') }}">Home</a></li>
-          <li><a href="{{ url_for('registration') }}"><strong>Sign Up Now</strong></a></li>
+          <li><a href="{{ url_for('users.register') }}"><strong>Sign Up Now</strong></a></li>
           <li><a href="#">How It Works</a></li>
           <li><a href="#">About Us</a></li>
           <li><a href="#">FAQ</a></li>
