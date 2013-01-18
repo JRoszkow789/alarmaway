@@ -7,35 +7,29 @@ from app import db
 from app.forms import RegisterBeginForm
 from app.phones.forms import AddPhoneForm
 from app.phones.models import Phone
-from app.decorators import login_required
+from ..users.decorators import login_required
 
 mod = Blueprint('phones', __name__, url_prefix='/phones')
 logger = logging.getLogger('root')
 
-@mod.route('/view/<phone_id>')
-@login_required
-def view_phones(phone_id):
-    phone = Phone.query.filter_by(id=phone_id).first()
-    try:
-        return "Found Phone!\nid: %s\tnumber: %s\nowner: %s" % (
-            phone.id,
-            phone.number,
-            phone.owner.email,
-            )
-    except:
-        abort(404)
-
 @mod.route('/add', methods=['GET', 'POST'])
-#@login_required
-def add_phone():
+@login_required
+def add():
+    info_msg = ("""
+        VIEW NOT IMPLEMENTED :: phones.add
+        user_id: %s, method type: %s"""
+        % (g.user.id, request.method)
+        )
+    logger.debug(info_msg)
+    return info_msg
     #if Phone.query.filter_by(id=user['user_id'], verified=False).first():
     #    # User already has an unverified phone, alert and redirect them.
     #    flash("Error: You already have an unverified phone. Verify first.")
     #    return redirect(url_for('user_home'))
 
-    form = RegisterBeginForm(request.form)
-    if form.validate_on_submit():
-        return "Number validated: %s" % form.phone_number.data
+    #form = RegisterBeginForm(request.form)
+    #if form.validate_on_submit():
+    #    return "Number validated: %s" % form.phone_number.data
         # Form validation checks for correct format and presence, but we
         # still need to check that the number doesn't already exist in db.
         #try:
@@ -56,19 +50,25 @@ def add_phone():
         #    return "Success!"
         #user_code = generate_verification_code()
         #send_phone_verification()
+    #return render_template('phones/add.html', form=form)
 
-    return render_template('phones/add_phone.html', form=form)
 
 @mod.route('/verify/<phone_id>', methods=['GET', 'POST'])
-def verify_phone(phone_id):
-    logger.debug("""
-        VIEW NOT IMPLEMENTED
-        phones.verify_phone
-        phone_id: %s
-        method type: %s""" % (phone_id, request.method)
+def verify(phone_id):
+    info_msg = ("""
+        VIEW NOT IMPLEMENTED :: phones.verify
+        phone_id: %s, method type: %s"""
+        % (phone_id, request.method)
         )
-    return "VIEW phones.verify_phone"
+    logger.debug(info_msg)
+    return info_msg
 
-@mod.route('/remove', methods=['GET', 'POST'])
-def remove_phone():
-    return "Remove phone called"
+@mod.route('/remove/<phone_id>', methods=['GET', 'POST'])
+def remove(phone_id):
+    info_msg = ("""
+        VIEW NOT IMPLEMENTED :: phones.remove
+        phone_id: %s, method type: %s"""
+        % (phone_id, request.method)
+        )
+    logger.debug(info_msg)
+    return info_msg

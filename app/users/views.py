@@ -1,19 +1,23 @@
 from __future__ import absolute_import
-from flask import (Blueprint, redirect, render_template, request, url_for,
-    session)
+from flask import (Blueprint, g, redirect, render_template, request,
+        url_for, session)
 from sqlalchemy.exc import IntegrityError
 import logging
+from werkzeug import check_password_hash, generate_password_hash
 
 from app import db
 from app.utils import flash_errors, generate_verification_code
-from app.users.forms import FullRegisterForm
+from .decorators import login_required, non_login_required
+from app.users.forms import FullRegisterForm, LoginForm
 from app.users.models import User
 from app.phones.models import Phone
+from ..phones.forms import PhoneVerificationForm
 
 mod = Blueprint('users', __name__, url_prefix='/users')
 logger = logging.getLogger('root')
 
 @mod.route('/register', methods=['GET', 'POST'])
+@non_login_required(alert='Already registered')
 def register():
     """Main user registration page. Provides a full registration form.
     Upon succesful input validation, creates a new user.
@@ -31,7 +35,7 @@ def register():
         new_user = User(
             name=name,
             email=form.email.data,
-            password=form.password.data,
+            password=generate_password_hash(form.password.data),
             timezone = form.timezone.data,
             )
         db.session.add(new_user)
@@ -58,10 +62,10 @@ def register():
             #TODO this needs to be redirect(phones.add page or something
             session['user_id'] = new_user.id
             flash_errors(form)
-            return redirect(url_for('phones.add_phone'))
+            return redirect(url_for('phones.add'))
 
         verification_code = generate_verification_code()
-        #manager.process_verification(verification_code, Phone.number)
+        #TODO manager.process_verification(verification_code, Phone.number)
         session['verification_code'] = verification_code
         session['user_id'] = new_user.id
 
@@ -77,17 +81,60 @@ def register():
     return render_template('users/register.html', form=form)
 
 @mod.route('/home')
+@login_required
 def home():
-    return "User Home(Profile) Page"
+    user = g.user
+    need_verify_phone, form = None, None
+    for phone in user.phones:
+        if not phone.verified:
+            need_verify_phone = phone.id
+            form = PhoneVerificationForm(request.form)
+            break
+    return render_template('users/home.html',
+        user=user,
+        verify_phone=need_verify_phone,
+        form=form
+        )
+    #info_msg = ("""
+    #    VIEW NOT IMPLEMENTED :: users.home
+    #    user_id: %s, method type: %s"""
+    #    % (user.id, request.method)
+    #    )
+    #logger.debug(info_msg)
+    #return info_msg
 
 @mod.route('/account')
-def user_account():
-    return "User account page"
+@login_required
+def account():
+    info_msg = ("""
+        VIEW NOT IMPLEMENTED :: users.account
+        user_id: %s, method type: %s"""
+        % (g.user.id, request.method)
+        )
+    logger.debug(info_msg)
+    return info_msg
 
 @mod.route('/login', methods=['GET', 'POST'])
+@non_login_required(alert='You are already logged in')
 def login():
-    return "User Login Page"
+    """A basic user login page."""
+    form = LoginForm(request.form)
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if not user:
+            form.email.errors.append('Username/email does not exist')
+        elif not check_password_hash(user.password, form.password.data):
+            form.password.errors.append("Invalid password")
+        else:
+            session['user_id'] = user.id
+            return redirect(url_for('users.home'))
+    flash_errors(form)
+    return render_template('users/login.html', form=form)
 
 @mod.route('/logout')
 def logout():
-    return "User Logout Page"
+    """Standard Logout view. Clears the applications data from session and
+    Logs the user out.
+    """
+    session.pop('verification_code')
+    session.pop('user_id')

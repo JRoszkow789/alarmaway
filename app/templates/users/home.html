@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block preheader %}
+<style type="text/css">
+  .alarm-container {
+    margin: 30px auto 60px auto;
+    padding: 20px 30px 20px 30px;
+    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
+    border: 3px solid #F2F2F2;
+    -webkit-border-radius: 5px;
+       -moz-border-radius: 5px;
+            border-radius: 5px;
+    -webkit-box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
+       -moz-box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
+            box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
+  }
+  .alarm-cell {
+    width: 175px;
+    height: 150px;
+    margin: 10px;
+    padding: 15px;
+    background: #FFF;
+    text-align: center;
+    float: left;
+  }
+  .whiteo {
+    color: #F5F5F5;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="whiteo">
+    {{ user.email }} <small>Alarm Away account</small>
+  </h1>
+</div>
+<div class="row well well-large major-container">
+{% if verify_phone %}
+  <div class="row zero-row">
+    <div class="alert alert-error t-center">
+      <button type="button" class="close" data-dismiss="alert">x</button>
+      <h4>Verify Your Phone Number!</h4>
+      <p>The Alarm Away service will only work with phone numbers that you have
+        verified ownership of. You should have already received an SMS message
+        containing a 7 digit verification code. Please enter this code below to
+        verify the number.
+      </p>
+      <form class="form-inline" method="POST"
+          action="{{ url_for('phones.verify', phone_id=verify_phone) }}">
+        {{ form.csrf_token }}
+        {{ form.verification_code(class="input-medium",
+            placeholder="Verification Code") }}
+        <input type="submit" class="btn" value="Verify Phone">
+      </form>
+      <p>Wrong Number? <a href="#">Change it here.</a> Or we can
+        <a href="#">Send a new verification code.</a>
+      </p>
+    </div>
+  </div>
+{% endif %}
+{% with success_messages = get_flashed_messages(category_filter=['success']) %}
+  {% if success_messages %}
+  <div class="alert alert-success">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>Well Done!</h4>
+    {% for success_message in success_messages %}
+      <p>{{ success_message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+{% with error_messages = get_flashed_messages(category_filter=['error']) %}
+  {% if error_messages %}
+  <div class="alert alert-error">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>An error has occurred...</h4>
+    {% for error_message in error_messages %}
+      <p>{{ error_message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+{% with info_messages = get_flashed_messages() %}
+  {% if info_messages %}
+  <div class="alert alert-info">
+    <button type="button" data-dismiss="alert" class="close">x</button>
+    <h4>More information</h4>
+    {% for info_message in info_messages %}
+      <p>{{ info_message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+<div class="tabbable">
+  <div class="nav-tab-container">
+    <ul class="nav nav-tabs t-center">
+      <li class="active"><a href="#alarmtab" data-toggle="tab">Alarms</a></li>
+      <li><a href="#accounttab" data-toggle="tab">Account</a></li>
+      <li><a href="#moretab" data-toggle="tab">More</a></li>
+    </ul>
+  </div>
+  <div class="tab-content">
+    <div class="tab-pane active" id="alarmtab">
+      <h2 class="t-left">Your alarms:</h2>
+      {% if not user.alarms %}
+      <div class="alert alert-success">
+        <button type="button" class="close" data-dismiss="alert">x</button>
+        <h4>Add Your First Alarm!</h4>
+        <p>Checkout the example below, and add your custom alarm to change the way
+          you start your morning.</p>
+      </div>
+      {% endif %}
+      <div class="row alarm-container">
+      {% for alarm in user.alarms %}
+        <div class="alarm-cell">
+          <p>
+            <strong>Status: </strong>
+            {% if alarm.active %}
+            <span class="label label-success">
+            {% else %}
+            <span class="label label-important">
+            {% endif %}
+            <strong>{{ alarm.active }}</strong>
+            </span>
+          </p>
+          <p>
+          {% if alarm.next_run_time %}
+            <strong>Goes off: </strong>{{ alarm.next_run_time }}
+          {% else %}
+            <strong>Time: </strong>{{ alarm.time }}
+          {% endif %}
+          </p>
+          <p>
+            <strong>Phone: </strong>{{ alarm.phone.number }}
+          </p>
+          {% if alarm.active %}
+          <a href="{{ url_for('alarms.unset', alarm_id=alarm.id) }}"
+              class="btn btn-primary btn-large">
+            <strong>Turn Off Alarm &raquo;</strong>
+          </a>
+          {% else %}
+          <a href="{{ url_for('alarms.set', alarm_id=alarm.id) }}" 
+              class="btn btn-warning btn-large">
+            <strong>Set Alarm &raquo;</strong>
+          </a>
+          {% endif %}
+          <p class="t-center">
+            <a href="{{ url_for('alarms.remove', alarm_id=alarm.id) }}">
+              <span class="text-error">
+                <strong><i class="icon-trash"></i> Remove</strong>
+              </span>
+            </a>this alarm
+          </p>
+        </div>
+      {% else %}
+        <div class="alarm-cell">
+          <p>
+            <strong>Status: </strong>
+            <span class="label label-success"><strong>EXAMPLE</strong></span>
+          </p>
+          <p>
+            <strong>Time: </strong>7:00 AM
+          </p>
+          <p>
+            <strong>Phone: </strong>(555)555-5555
+          </p>
+          <a href="{{ url_for('alarms.add') }}" class="btn btn-primary btn-large">
+            <strong>Make Your Own &raquo;</strong>
+          </a>
+        </div>
+      {% endfor %}
+        <div class="alarm-cell">
+          <p class="t-center">
+            <span class="label label-inverse">Unlimited Alarms!</span>
+          </p>
+          <h1 class="t-center">+</h1>
+          <a href="{{ url_for('alarms.add') }}" class="btn btn-primary btn-large">
+            <strong>Add Alarm &raquo;</strong>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="tab-pane" id="accounttab">
+      <h2 class="t-left">Your Account: </h2>
+      <div class="row">
+        <div class="span4 well faded-insert">
+          <dl>
+            <dt>Status
+            <dd>{{ user.getStatus() }}
+            {% if user.status < 2 %}
+            <dd><a href="#">Upgrade Account</a>
+            {% endif %}
+            <dt>Member Since
+            <dd>{{ user.created }}
+            <dt>Phones
+            {% for phone in user.phones %}
+            <dd>
+              <a href="{{ url_for('phones.remove', phone_id=phone.id) }}">
+                <i class="icon-trash"></i>
+              </a>
+              {{ phone.number }}
+            {% else %}
+            <dd>No verified phones yet!
+            {% endfor %}
+            <dd><a href="{{ url_for('phones.add') }}">Add Phone &raquo;</a>
+          </dl>
+        </div>
+        <div class="span5 offset1 t-center">
+          <h4>
+            Upgrading to a premium Alarm Away account provides access to
+            <span class="header-dark">multiple alarms, multiple phones,</span>
+            ultimate flexibility and <span class="header-dark">much more</span>
+          </h4>
+          <a href="#" class="btn btn-warning btn-large">
+            <strong>Plans and Pricing &raquo;</strong>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="tab-pane" id="moretab">
+      <h4 class="t-center">More Info Here</h4>
+      <p class="t-left">
+        More information here and here and here.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -61,6 +61,8 @@ from app.phones.views import mod as phonesModule
 app.register_blueprint(phonesModule)
 from app.users.views import mod as usersModule
 app.register_blueprint(usersModule)
+from app.alarms.views import mod as alarmsModule
+app.register_blueprint(alarmsModule)
 
 #def get_db():
 #    """Opens a new database connection if there is none yet for the

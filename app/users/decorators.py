@@ -10,13 +10,13 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def non_login_required(alert_message='', severity='info'):
+def non_login_required(alert='', severity='info'):
     def func_wrapper(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if g.user is not None:
-                if alert_message:
-                    flash(alert_message, severity)
+                if alert:
+                    flash(alert, severity)
                 return redirect(url_for('user_home'))
             return f(*args, **kwargs)
         return decorated_function
