@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row zero-row">
+  <div class="alert alert-error t-center">
+    <h3>Verify Your Phone Number!</h3>
+    <h4 class="header-dark">{{ phone.number|format_phone_number }}</h4>
+    <p>The Alarm Away service will only work with phone numbers that you have
+      verified ownership of. You should have already received an SMS message
+      containing a 7 digit verification code. Please enter this code below to
+      verify the number.
+    </p>
+    <form class="form-inline" method="POST"
+        action="{{ url_for('phones.verify', phone_id=phone.id) }}">
+      {{ form.csrf_token }}
+      {{ form.verification_code(class="input-medium",
+          placeholder="Verification Code") }}
+      <input type="submit" class="btn" value="Verify Phone">
+    </form>
+    <p>Wrong Number? <a href="#">Change it here.</a> Or we can
+      <a href="#">Send a new verification code.</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

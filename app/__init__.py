@@ -1,17 +1,15 @@
-from __future__ import absolute_import, division, unicode_literals
+from __future__ import absolute_import, division, print_function
 from datetime import datetime, timedelta
 import random
-from flask import (_app_ctx_stack, flash, Flask, g, redirect, render_template,
+from flask import (flash, Flask, g, redirect, render_template,
     request, session, url_for)
 from flask.ext.sqlalchemy import SQLAlchemy
-import MySQLdb
-import MySQLdb.cursors
 import pytz
 import twilio.twiml
 from werkzeug import generate_password_hash, check_password_hash
 from . import constants
 from . import scheduler
-from .decorators import login_required, non_login_required
+from .users.decorators import login_required, non_login_required
 from .forms import (AddUserAlarmForm, PhoneForm, FullRegisterForm,
     LoginForm, RegisterBeginForm, RegisterContinueForm, PhoneVerificationForm)
 
@@ -64,52 +62,11 @@ app.register_blueprint(usersModule)
 from app.alarms.views import mod as alarmsModule
 app.register_blueprint(alarmsModule)
 
-#def get_db():
-#    """Opens a new database connection if there is none yet for the
-#    current application context.
-#    """
-#    top = _app_ctx_stack.top
-#    if not hasattr(top, 'mysql_db'):
-#        top.mysql_db = MySQLdb.connect(
-#            host=app.config['DB_HOST'],
-#            user=app.config['DB_USER'],
-#            passwd=app.config['DB_PW'],
-#            port=app.config['DB_PORT'],
-#            db=app.config['DATABASE'],
-#            cursorclass=MySQLdb.cursors.DictCursor,
-#            )
-#    return top.mysql_db
-#
-#def query_db(query, args=(), one=False):
-#    """Helper method for establishing db connection and executing query.
-#       Passes query directly to a mysql cursor object along with supplied args.
-#       By default, this function returns the list of rows returned by the
-#       cursor. If the one parameter is set to True, it will return only the
-#       first result.
-#    """
-#    cur = get_db().cursor()
-#    cur.execute(query, args)
-#    rv = cur.fetchone() if one else cur.fetchall()
-#    return rv
-
 @app.before_request
 def before_request():
     g.user = None
     if 'user_id' in session:
         g.user = User.query.filter_by(id=session['user_id']).first()
-        #g.user = query_db("""
-        #    select user_id, user_email, user_role, user_status, user_register
-        #    from users where user_id=%s limit 1""",
-        #    session['user_id'],
-        #    one=True,
-        #    )
-
-#@app.teardown_appcontext
-#def close_database(exception):
-#    """Closes the database again at the end of the request."""
-#    top = _app_ctx_stack.top
-#    if hasattr(top, 'mysql_db'):
-#        top.mysql_db.close()
 
 def flash_errors(form):
     for field, errors in form.errors.items():
@@ -135,45 +92,6 @@ def format_user_date(user_date):
 
 def format_phone_number(num):
     return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
-
-def verify_user_phone(user_id):
-    """Updates the specified user's phones to verified.
-    """
-    db = get_db()
-    cur = db.cursor()
-    cur.execute(
-        'update user_phones set phone_verified=%s where phone_owner=%s',
-        (1, user_id)
-        )
-    db.commit()
-
-def create_new_user(email, pw_hash):
-    """Creates a new user and returns the newly created user's id.
-    """
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("""
-        insert into users (user_email, user_pw, user_role, user_status)
-        values (%s, %s, %s, %s)""", (
-        email,
-        pw_hash,
-        constants.USER,
-        constants.FREE,
-    ))
-    new_user_id = cur.lastrowid
-    db.commit()
-    return new_user_id
-
-def get_user_id(email_address):
-    """Looks up a user by their email address, and returns the user's ID."""
-    user_info = query_db(
-        'select user_id from users where user_email = %s',
-        email_address,
-        one=True,
-        )
-    if user_info:
-        return user_info['user_id']
-    return None
 
 def add_new_user_timezone(new_user_id, user_tz):
     """Adds a timezone to the database as a user_property.
@@ -524,7 +442,7 @@ def page_not_found(error):
 
 @app.errorhandler(500)
 def server_error(error):
-    app.logger.info('ERROR 500 -- %s' % error)
+    app.logger.error(error)
     return render_template('500.html'), 500
 
 
@@ -613,99 +531,6 @@ def alarm_response():
     resp = twilio.twiml.Response()
     resp.sms(resp_message)
     return str(resp)
-
-
-@app.route('/register', methods=['GET', 'POST'])
-@non_login_required('You are already registered and logged in')
-def registration():
-    form = FullRegisterForm(request.form)
-    if form.validate_on_submit():
-        user_phone_number = form.phone_number.data
-        user_email = form.email.data
-        if get_phone_id(user_phone_number):
-            flash('That number is already associated with an account.',
-                    'error')
-        elif get_user_id(user_email):
-            flash('That email is already registered, login instead.')
-            return redirect(url_for('login'))
-        else:
-            uv_code = generate_verification_code()
-            session['uv_code'] = uv_code
-            send_phone_verification(user_phone_number, uv_code)
-            new_user_id = create_new_user(
-                user_email, generate_password_hash(form.password.data))
-            new_tz_id = add_new_user_timezone(new_user_id, form.timezone.data)
-            new_phone_id = create_new_phone(new_user_id, user_phone_number)
-
-            session['user_id'] = new_user_id
-            app.logger.debug("""
-                View::registration - New User Created
-                id: %s, email: %s, phone_id: %s, tz_id: %s
-                """ % (new_user_id, user_email, new_phone_id, new_tz_id))
-            return redirect(url_for('user_home'))
-        flash_errors(form)
-    return render_template('registration.html', form=form)
-
-
-@app.route('/user')
-@app.route('/user/view')
-@login_required
-def user_home():
-    need_verify_phone, verify_form = False, None
-    user = g.user
-    user_phones = get_user_phones(user['user_id'], verified=False)
-    for phone in user_phones:
-        if not phone['phone_verified']:
-            need_verify_phone = True
-            verify_form = PhoneVerificationForm(request.form)
-            break
-    user_alarms = get_user_alarms(user['user_id'], active_only=True)
-    user_tz = query_db(
-        'select up_value from user_properties where up_user=%s and up_key=%s', (
-        user['user_id'], 'user_tz'), one=True
-    )
-    for alarm in user_alarms:
-        alarm['local_time'] = get_local(
-            get_alarm_time(alarm['alarm_time']),
-            user_tz['up_value']
-        )
-        alarm['alarm_status'] = get_alarm_status(alarm['alarm_id'])
-        alarm['phone_number'] = get_phone_number(alarm['alarm_phone'])
-    return render_template(
-        'user-account-main.html',
-        user=user,
-        need_verify_phone=need_verify_phone,
-        form=verify_form,
-        user_alarm_list=user_alarms,
-        user_phone_list=user_phones
-    )
-
-
-
-@app.route('/login', methods=['GET', 'POST'])
-@non_login_required('You are already logged in.')
-def login():
-    form = LoginForm(request.form)
-    if form.validate_on_submit():
-        user = query_db('''select user_id, user_pw from users where
-                               user_email=%s''', form.email.data, one=True)
-        if user and check_password_hash(user['user_pw'], form.password.data):
-            session['user_id'] = user['user_id']
-            flash('Successfully logged in', 'success')
-            return redirect(url_for('user_home'))
-        elif user:
-            flash("Invalid password", 'error')
-        else:
-            flash("Invalid email address", 'error')
-    return render_template('login.html', form=form)
-
-
-@app.route('/logout')
-def logout():
-    session.pop('uv_code', None)
-    session.pop('user_id', None)
-    return redirect(url_for('home'))
-
 
 @app.route('/checkit')
 @login_required
@@ -799,80 +624,6 @@ def unset_alarm(alarm_id):
     else:
         flash('Alarm canceled', 'info')
     return redirect(url_for('user_home'))
-
-
-@app.route('/alarm/update/<alarm_id>', methods=['GET', 'POST'])
-@login_required
-def update_alarm(alarm_id):
-    user = g.user
-    if not verify_alarm_ownership(user['user_id'], alarm_id):
-        flash('Error updating alarm. Can only modify your own alarms.', 'error')
-        return redirect(url_for('user_home'))
-    flash('Page still under construction', 'info')
-    return redirect(url_for('user_home'))
-
-
-######################################################
-## PHONE VIEWS 
-######################################################
-
-
-@app.route('/phone/new', methods=['GET', 'POST'])
-@login_required
-def new_phone():
-    user = g.user
-    if query_db("""
-            select phone_id from user_phones
-            where phone_owner=%s and phone_verified=%s
-            """, (user['user_id'], 0), one=True):
-        flash('You currently have an unverified phone. Please verify first.',
-            'error')
-        return redirect(url_for('user_home'))
-    form = PhoneForm(request.form)
-    if form.validate_on_submit():
-        phone_number = form.phone_number.data
-        if get_phone_id(phone_number):
-            flash('That phone number is already associated with an account.',
-                'error')
-        else:
-            uv_code = generate_verification_code()
-            session['uv_code'] = uv_code
-            send_phone_verification(phone_number, uv_code)
-            if create_new_phone(user['user_id'], phone_number):
-                flash('Successfully added new phone!', 'success')
-                return redirect(url_for('user_home'))
-            else:
-                flash('Error adding new phone. Please try again later.',
-                    'error')
-    return render_template('add-new-phone.html', form=form)
-
-
-@app.route('/phone/remove/<phone_id>')
-@login_required
-def remove_phone(phone_id):
-    if not remove_user_phone(g.user['user_id'], phone_id):
-        flash('An error has occured. Please try again.\
-        Remember, you can only modify your own phones.', 'error')
-    else:
-        flash('Successfully removed phone', 'success')
-    return redirect(url_for('user_home'))
-
-
-@app.route('/phone/verify', methods=['POST'])
-@login_required
-def verify_phone():
-    form = PhoneVerificationForm(request.form)
-    if form.validate_on_submit():
-        correct_code = session.get('uv_code', None)
-        if correct_code is None:
-            flash('An Error has occured, please request a new code.', 'error')
-        elif form.verification_code.data != correct_code:
-            flash('Invalid verification code. Try again or request a new code',
-                'error')
-        else:
-            verify_user_phone(g.user['user_id'])
-    return redirect(url_for('user_home'))
-
 
 # Add some filters to jinja
 app.jinja_env.filters['format_alarm_time'] = format_alarm_time

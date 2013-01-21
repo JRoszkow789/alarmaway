@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 from twilio.rest import TwilioRestClient
 import twilio.twiml
 
@@ -46,7 +47,7 @@ class AlarmAwayTwilioClient:
                        by the msg_type parameter.
 
         """
-        print msg, msg_type, args
+        print('', (msg, msg_type, args), '\n')
         if msg is None and (msg_type not in MESSAGE_TYPES or args is []):
             return None
         elif msg is None:

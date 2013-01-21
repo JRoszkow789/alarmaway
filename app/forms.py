@@ -63,7 +63,7 @@ class AddUserAlarmForm(Form):
     phone_number = SelectField('Phone number', [Required()], coerce=int)
 
     def __repr__(self):
-        return '<forms.AddUserAlarmForm - phones: %s>' % self.phone_number.choices
+        return '<AddUserAlarmForm - phones: %s>' % self.phone_number.choices
 
 
 class RegisterBeginForm(PhoneForm):

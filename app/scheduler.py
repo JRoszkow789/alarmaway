@@ -1,10 +1,11 @@
+from __future__ import absolute_import, division, print_function
 import MySQLdb
 from contextlib import closing
 from celery import Celery
 from datetime import timedelta
-import aa_comm
+from . import aa_comm
 
-celery = Celery('scheduler')
+celery = Celery('app')
 
 import celeryconfig
 celery.config_from_object('celeryconfig')
@@ -93,3 +94,6 @@ def send_user_text(msg, number):
 @celery.task
 def test_add(x, y):
     return x + y
+
+if __name__ == '__main__':
+    celery.worker_main()

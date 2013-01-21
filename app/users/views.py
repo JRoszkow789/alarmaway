@@ -1,16 +1,16 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 from flask import (Blueprint, g, redirect, render_template, request,
         url_for, session)
 from sqlalchemy.exc import IntegrityError
 import logging
 from werkzeug import check_password_hash, generate_password_hash
 
-from app import db, sched
-from app.utils import flash_errors, generate_verification_code
+from .. import db, sched
+from ..utils import flash_errors, generate_verification_code
 from .decorators import login_required, non_login_required
-from app.users.forms import FullRegisterForm, LoginForm
-from app.users.models import User
-from app.phones.models import Phone
+from .forms import FullRegisterForm, LoginForm
+from .models import User
+from ..phones.models import Phone
 from ..phones.forms import PhoneVerificationForm
 
 mod = Blueprint('users', __name__, url_prefix='/users')

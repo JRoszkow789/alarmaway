@@ -1,7 +1,7 @@
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, print_function
 from datetime import datetime
 
-from app import db
+from .. import db
 
 class Alarm(db.Model):
 

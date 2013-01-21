@@ -1,7 +1,7 @@
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import
 from datetime import datetime
 
-from app import db
+from .. import db
 from . import constants as USER
 
 class User(db.Model):

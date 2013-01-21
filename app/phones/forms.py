@@ -16,7 +16,7 @@ def validate_number(num):
     except AttributeError:
         return False
 
-class AddPhoneForm(Form):
+class PhoneForm(Form):
     phone_number = TelField('Phone number', [Required(),])
 
     def validate(self):
