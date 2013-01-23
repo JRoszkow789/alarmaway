@@ -24,12 +24,14 @@
   }
 </style>
 {% endblock %}
-{% block content %}
+{% block pre_flasher %}
 <div class="page-header">
   <h1 class="header-dark t-center">
     {{ user.email }} <small>Alarm Away account</small>
   </h1>
 </div>
+{% endblock %}
+{% block content %}
 {% if verify_phone %}
   <div class="row zero-row">
     <div class="alert alert-error t-center">
@@ -82,18 +84,18 @@
             {% else %}
             <span class="label label-important">
             {% endif %}
-            <strong>{{ alarm.active }}</strong>
+            <strong>{{ alarm.active|format_alarm_status }}</strong>
             </span>
           </p>
           <p>
           {% if alarm.next_run_time %}
             <strong>Goes off: </strong>{{ alarm.next_run_time }}
           {% else %}
-            <strong>Time: </strong>{{ alarm.time }}
+            <strong>Time: </strong>{{ alarm.get_local()|format_alarm_time }}
           {% endif %}
           </p>
           <p>
-            <strong>Phone: </strong>{{ alarm.phone.number }}
+            <strong>Phone: </strong>{{ alarm.phone.number|format_phone_number }}
           </p>
           {% if alarm.active %}
           <a href="{{ url_for('alarms.unset', alarm_id=alarm.id) }}"

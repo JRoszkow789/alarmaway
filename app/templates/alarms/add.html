@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block preheader %}
+<style type="text/css">
+  .set-alarm-container {
+    background: #FFF;
+    width: 100%;
+    max-width: 420px;
+    margin: 20px auto;
+    padding: 30px 60px 20px 60px;
+    text-align: center;
+    border: #347EAC dashed 3px;
+    -webkit-border-radius: 5px;
+       -moz-border-radius: 5px;
+            border-radius: 5px;   
+  }
+</style>
+{% endblock %}
+{% block hero_title %}Set An Alarm Away Alarm{% endblock %}
+{% block hero_subtitle %}and never set another alarm again{% endblock %}
+{% block content %}
+  <div class="set-alarm-container faded-insert">
+    <form class="form-horizontal" method="post"
+        action="{{ url_for('alarms.add') }}">
+      {{ form.csrf_token }}
+      <div class="control-group">
+        <label class="control-label" for="time">
+          <strong>Alarm Time</strong>
+        </label>
+        <div class="controls">
+          {{ form.alarm_time }}
+          <a href="#">
+            <i class="icon-question-sign"></i>
+          </a>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="phone">
+          <strong>Phone</strong>
+        </label>
+        <div class="controls">
+          {{ form.phone_number }}
+          <a href="#">
+            <i class="icon-question-sign"></i>
+          </a>
+        </div>
+      </div>
+        <div class="t-center">
+          <input type="submit" class="btn btn-warning btn-large"
+          value="Set Alarm!">
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}

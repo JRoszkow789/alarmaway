@@ -5,7 +5,8 @@ from sqlalchemy.exc import IntegrityError
 import logging
 from werkzeug import check_password_hash, generate_password_hash
 
-from .. import db, sched
+from .. import db
+from .. import tasks
 from ..utils import flash_errors, generate_verification_code
 from .decorators import login_required, non_login_required
 from .forms import FullRegisterForm, LoginForm
@@ -18,12 +19,14 @@ logger = logging.getLogger('root')
 
 #TODO This doesnt belong here. Basically just a stub for now to abstract
 #this functionality of of views themselves.
-def process_phone_verification(phone_number, verification_code):
-    sched.send_message(
-        'Welcome to AlarmAway! Your Verification code is %s'
-        % verification_code,
-        phone_number,
-        )
+#def process_phone_verification(phone_number, verification_code):
+#    sched.send_message(
+#        'Welcome to AlarmAway! Your Verification code is %s'
+#        % verification_code,
+#        phone_number,
+#        )
+def process_phone_verification(phone, verification_code):
+    tasks.send_verification(phone.id, verification_code)
 
 @mod.route('/register', methods=['GET', 'POST'])
 @non_login_required(alert='Already registered')
@@ -76,7 +79,7 @@ def register():
             return redirect(url_for('phones.add'))
 
         verification_code = generate_verification_code()
-        process_phone_verification(new_phone.number, verification_code)
+        process_phone_verification(new_phone, verification_code)
         session['verification_code'] = verification_code
         session['user_id'] = new_user.id
 
@@ -110,12 +113,15 @@ def home():
 @mod.route('/account')
 @login_required
 def account():
-    info_msg = ("""
-        VIEW NOT IMPLEMENTED :: users.account
-        user_id: %s, method type: %s"""
-        % (g.user.id, request.method)
-        )
-    logger.debug(info_msg)
+    phone = g.user.phones.first()
+    tasks.send_call(phone.id)
+    info_msg = "called user %s at phone %s" % (g.user, phone)
+    #info_msg = ("""
+    #    VIEW NOT IMPLEMENTED :: users.account
+    #    user_id: %s, method type: %s"""
+    #    % (g.user.id, request.method)
+    #    )
+    #logger.debug(info_msg)
     return info_msg
 
 @mod.route('/login', methods=['GET', 'POST'])

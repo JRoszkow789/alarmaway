@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 from datetime import datetime, timedelta
+import datetime as DateTime
 import random
 from flask import (flash, Flask, g, redirect, render_template,
     request, session, url_for)
@@ -39,7 +40,7 @@ if not app.debug:
     file_handler.setFormatter(formatter)
 
     # Ensure a root logger exists
-    root_logger = logging.getLogger('root')
+    root_logger = logging.getLogger(__name__)
     root_logger.setLevel(logging.DEBUG)
 
     loggers = [
@@ -54,7 +55,10 @@ if not app.debug:
 db = SQLAlchemy(app)
 sched = scheduler.AlarmScheduler()
 
+from app.alarms.models import Alarm
+from app.phones.models import Phone
 from app.users.models import User
+
 from app.phones.views import mod as phonesModule
 app.register_blueprint(phonesModule)
 from app.users.views import mod as usersModule
@@ -79,6 +83,8 @@ def format_alarm_time(alarm_time):
     """Formats a datetime.time object for human-friendly output.
        Used within Jinja templates.
     """
+    if not isinstance(alarm_time, DateTime.time):
+        alarm_time = datetime(alarm_time).time()
     return alarm_time.strftime('%I:%M %p')
 
 def format_alarm_status(status):

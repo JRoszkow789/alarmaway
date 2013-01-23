@@ -5,9 +5,9 @@ from celery import Celery
 from datetime import timedelta
 from . import aa_comm
 
-celery = Celery('app')
+celery = Celery(__name__)
 
-import celeryconfig
+import ccconfig as celeryconfig
 celery.config_from_object('celeryconfig')
 
 
@@ -96,4 +96,4 @@ def test_add(x, y):
     return x + y
 
 if __name__ == '__main__':
-    celery.worker_main()
+    celery.start()

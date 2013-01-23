@@ -93,6 +93,9 @@
 {% block container %}
 <div class="container">
   <div class="row well well-large major-container">
+    <!-- For more customization. -->
+    {% block pre_flasher %}{% endblock %}
+
     {% block flasher %}
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
