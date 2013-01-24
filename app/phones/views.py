@@ -5,7 +5,7 @@ from flask import (
     )
 from sqlalchemy.exc import IntegrityError
 
-from .. import db, sched
+from .. import db, task_manager
 from ..utils import flash_errors, generate_verification_code
 from .forms import PhoneForm, PhoneVerificationForm
 from .models import Phone
@@ -14,18 +14,15 @@ from ..users.decorators import login_required
 mod = Blueprint('phones', __name__, url_prefix='/phones')
 logger = logging.getLogger('root')
 
-#TODO This doesnt belong here. Basically just a stub for now to abstract
-#this functionality of of views themselves.
-def process_phone_verification(phone_number, verification_code):
-    sched.send_message(
-        'Welcome to AlarmAway! Your Verification code is %s'
-        % verification_code,
-        phone_number,
-    )
-
 @mod.route('/add', methods=['GET', 'POST'])
 @login_required
 def add():
+    """Standard view for adding a new phone. Requires a current logged in user,
+    with no currently unverified phones. If these requirements are met and
+    input is valid, the new phone is added to database and verification is
+    proceessed.
+    """
+
     user = g.user
     if Phone.query.filter_by(owner=user, verified=False).first():
         # User already has an unverified phone, alert and redirect them.
@@ -48,7 +45,7 @@ def add():
             flash("Oops, something went wrong... Please try again.")
         else:
             verification_code = generate_verification_code()
-            process_phone_verification(new_phone.number, verification_code)
+            task_manager.processPhoneVerification(new_phone, verification_code)
             session['verification_code'] = verification_code
             flash('New phone number added!', 'success',)
             return redirect(url_for('users.home'))
@@ -58,6 +55,12 @@ def add():
 @mod.route('/verify/<phone_id>', methods=['GET', 'POST'])
 @login_required
 def verify(phone_id):
+    """Standard View for verifying user's phones. Requires a verification code
+    to exist in the current session, and a logged in user. If these conditions
+    are met and the user's entered code is correct, verify the phone in db and
+    alert the user of status.
+    """
+
     if 'verification_code' not in session:
         logger.info('attempted to verify phone with no code in session')
         flash('No verification code found. Please request a new one.', 'error')
@@ -90,6 +93,11 @@ def verify(phone_id):
 @mod.route('/remove/<phone_id>')
 @login_required
 def remove(phone_id):
+    """Standard view for removing a phone number from the system. Requires
+    a logged in user who owns the requested phone to call this method,
+    then attempts to delete the phone from db and alerts user of status.
+    """
+
     phone = Phone.query.filter_by(id=phone_id, owner=g.user).first()
     if not phone:
         flash("Phone not found or ownership not verified.", 'error')

@@ -38,5 +38,4 @@ class Alarm(db.Model):
         return alarm_as_local_datetime.time()
 
     def __repr__(self):
-        return "<Alarm:{} -- (Owner: {}, Time: {})>".format(
-            self.id, self.owner_id, self.time)
+        return "<Alarm {}: {})>".format(self.id, self.time)

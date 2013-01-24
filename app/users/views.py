@@ -5,8 +5,7 @@ from sqlalchemy.exc import IntegrityError
 import logging
 from werkzeug import check_password_hash, generate_password_hash
 
-from .. import db
-from .. import tasks
+from .. import db, task_manager
 from ..utils import flash_errors, generate_verification_code
 from .decorators import login_required, non_login_required
 from .forms import FullRegisterForm, LoginForm
@@ -15,18 +14,7 @@ from ..phones.models import Phone
 from ..phones.forms import PhoneVerificationForm
 
 mod = Blueprint('users', __name__, url_prefix='/users')
-logger = logging.getLogger('root')
-
-#TODO This doesnt belong here. Basically just a stub for now to abstract
-#this functionality of of views themselves.
-#def process_phone_verification(phone_number, verification_code):
-#    sched.send_message(
-#        'Welcome to AlarmAway! Your Verification code is %s'
-#        % verification_code,
-#        phone_number,
-#        )
-def process_phone_verification(phone, verification_code):
-    tasks.send_verification(phone.id, verification_code)
+logger = logging.getLogger(__name__)
 
 @mod.route('/register', methods=['GET', 'POST'])
 @non_login_required(alert='Already registered')
@@ -79,7 +67,7 @@ def register():
             return redirect(url_for('phones.add'))
 
         verification_code = generate_verification_code()
-        process_phone_verification(new_phone, verification_code)
+        task_manager.processPhoneVerification(new_phone, verification_code)
         session['verification_code'] = verification_code
         session['user_id'] = new_user.id
 
@@ -97,6 +85,11 @@ def register():
 @mod.route('/home')
 @login_required
 def home():
+    """Main user home page. This is where user's are typically redirected to
+    after successful actions in the system, also where they come right after
+    signing up or logging in. Displays basic user, phone, and alarm data.
+    """
+
     user = g.user
     need_verify_phone, form = None, None
     for phone in user.phones:
@@ -113,21 +106,24 @@ def home():
 @mod.route('/account')
 @login_required
 def account():
-    phone = g.user.phones.first()
-    tasks.send_call(phone.id)
-    info_msg = "called user %s at phone %s" % (g.user, phone)
-    #info_msg = ("""
-    #    VIEW NOT IMPLEMENTED :: users.account
-    #    user_id: %s, method type: %s"""
-    #    % (g.user.id, request.method)
-    #    )
-    #logger.debug(info_msg)
+    """Represents an 'account' page for the user. This page will hold more
+    administrative information compared to the typical user home page. I.E
+    billing, account status, change password, etc...
+    """
+
+    info_msg = ("""
+        VIEW NOT IMPLEMENTED :: users.account
+        user_id: %s, method type: %s"""
+        % (g.user.id, request.method)
+        )
+    logger.debug(info_msg)
     return info_msg
 
 @mod.route('/login', methods=['GET', 'POST'])
 @non_login_required(alert='You are already logged in')
 def login():
     """A basic user login page."""
+
     form = LoginForm(request.form)
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -146,6 +142,7 @@ def logout():
     """Standard Logout view. Clears the applications data from session and
     Logs the user out.
     """
+
     session.pop('verification_code', None)
     session.pop('user_id', None)
     return redirect(url_for('home'))

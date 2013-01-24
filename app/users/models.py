@@ -30,4 +30,4 @@ class User(db.Model):
         return USER.ROLE[self.role]
 
     def __repr__(self):
-        return "<User {} ({})>".format(self.name, self.id)
+        return "<User {}: {}>".format(self.id, self.name)

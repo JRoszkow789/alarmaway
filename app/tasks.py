@@ -1,24 +1,44 @@
 from __future__ import absolute_import
 
+import logging
+from twilio.rest import TwilioRestClient
+
 from app.celery import celery
 from app.phones.models import Phone
 from app.users.models import User
 
-from app.twilio_client import send_sms_message, send_phone_call
+#TODO Move these
+TWILIO_ACCOUNT_ID = 'AC52113fd0906659e7c6091e1c5d754ac7'
+TWILIO_SECRET_TOKEN = '799a5ee66e106ca62f1f2fff8ba24220'
+TWILIO_FROM_NUMBER = '8133584864'
+DEFAULT_CALL_URL = 'http://canopyinnovation.com/twresp.xml'
+
+logger = logging.getLogger(__name__)
+
+client = TwilioRestClient(
+    account=TWILIO_ACCOUNT_ID,
+    token=TWILIO_SECRET_TOKEN,
+    )
 
 @celery.task
-def send_verification(phone_id, verification_code):
+def send_sms_message(phone_id, message, *args, **kwargs):
     phone = Phone.query.filter_by(id=phone_id).first()
-    message = """
-        Welcome to AlarmAway!
-        Complete registration by using the following code to verify your phone.
-        Your verfication code is %s.
-        """ % verification_code
-    send_sms_message(phone.number, message)
+    sms_message = client.sms.messages.create(
+        to=phone.number,
+        from_=TWILIO_FROM_NUMBER,
+        body=message,
+        )
+    logger.info("sms_message sent: %s" % sms_message)
 
-def send_call(phone_id):
+@celery.task
+def send_phone_call(phone_id, message_url=DEFAULT_CALL_URL):
     phone = Phone.query.filter_by(id=phone_id).first()
-    send_phone_call(phone.number)
+    phone_call = client.calls.create(
+        to=phone.number,
+        from_=TWILIO_FROM_NUMBER,
+        url=message_url,
+        )
+    logger.info("phone call sent: %s" % phone_call)
 
 @celery.task
 def greet(name, id=None):

@@ -21,4 +21,4 @@ class Phone(db.Model):
         self.created = datetime.utcnow()
 
     def __repr__(self):
-        return "<Phone %s belonging to user %s>" % (self.number, self.owner.id)
+        return "<Phone {}: {}>".format(self.id, self.number)

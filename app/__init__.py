@@ -55,9 +55,13 @@ if not app.debug:
 db = SQLAlchemy(app)
 sched = scheduler.AlarmScheduler()
 
+from .task_manager import TaskManager
+task_manager = TaskManager()
+
 from app.alarms.models import Alarm
 from app.phones.models import Phone
 from app.users.models import User
+
 
 from app.phones.views import mod as phonesModule
 app.register_blueprint(phonesModule)
