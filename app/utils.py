@@ -32,3 +32,15 @@ def get_utc(local_tm, tz):
     local_alarm = local_now.replace(hour=local_tm.hour, minute=local_tm.minute)
     utc_alarm = utc_tz.normalize(local_alarm)
     return utc_alarm.time()
+
+def get_local(utc_time, tz):
+    """Takes a datetime.time() object and a string representing a timezone,
+       and uses this information and the pytz library to convert this UTC
+       time to a local time in the given timezone.
+    """
+    utc_tz = pytz.utc
+    utc_now = datetime.utcnow().replace(tzinfo=utc_tz)
+    utc_alarm = utc_now.replace(hour=utc_time.hour, minute=utc_time.minute)
+    local_tz = pytz.timezone(tz)
+    local_alarm = local_tz.normalize(utc_alarm)
+    return local_alarm.time()

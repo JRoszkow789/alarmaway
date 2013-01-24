@@ -42,38 +42,14 @@
         <span class="header-blue">Simple</span>, and
         <span class="header-blue">Free!</span>
       </h3>
-      <form method="post" class="form-horizontal"
-          action="{{ url_for('home') }}">
-        {{ form.csrf_token }}
-        
-        <div class="control-group">
-          <label class="control-label" for="timezone">
-            <strong>
-              {{ form.timezone.label }}
-            </strong>
-          </label>
-          <div class="controls">
-            {{ form.timezone }}
-          </div>
-        </div>
-        
-        <div class="control-group">
-          <label class="control-label" for="phone">
-            <strong>{{ form.phone_number.label }}</strong>
-          </label>
-          <div class="controls">
-            {{ form.phone_number(placeholder="e.g. (555)555-1234") }}
-          </div>
-        </div>
-        
-        <div class="row">
-          <div class="span4 offset1">
-            <button type="submit" class="btn btn-warning btn-large btn-block">
+      <div class="row">
+        <div class="span4 offset1">
+          <a href="{{ url_for('users.register') }}"
+            class="btn btn-warning btn-large btn-block">
               <strong>Get Started!</strong>
-            </button>
-          </div>
+          </a>
         </div>
-      </form>
+      </div>
     </div>
   </div>
   <div class="promo-container">

@@ -21,7 +21,7 @@ class User(db.Model):
         self.email = email
         self.password = password
         self.timezone = timezone
-        self.joined = datetime.utcnow()
+        self.created = datetime.utcnow()
 
     def getStatus(self):
         return USER.STATUS[self.status]

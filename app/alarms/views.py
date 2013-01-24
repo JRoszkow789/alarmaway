@@ -55,9 +55,15 @@ def add():
 @mod.route('/remove/<alarm_id>')
 @login_required
 def remove(alarm_id):
-    alarm = Alarm.query.filter_by(id=alarm_id, owner=g.user).first()
-    if not alarm:
-        flash("No alarm found", 'error')
+    alarm = (Alarm.query
+        .filter_by(id=alarm_id, owner=g.user)
+        .first_or_404()
+        )
+    if alarm.active:
+        flash(
+            "That alarm is still active! Unset it first, then try again.",
+            'error',
+        )
     else:
         db.session.delete(alarm)
         db.session.commit()
