@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from celery import Celery
 
-celery = Celery('app.celery', include=['app.tasks'],)
+celery = Celery('app.celery', include=['app.celery.tasks'],)
 celery.config_from_object('celeryconfig')
 
 if __name__ == '__main__':

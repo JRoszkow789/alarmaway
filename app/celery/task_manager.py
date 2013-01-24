@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
-from app import tasks
-from app.users.models import User
+from . import tasks
+from .models import ManagedTask
+from ..users.models import User
 
 class TaskManager:
     def __init__(self, db=None):

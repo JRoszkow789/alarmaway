@@ -5,8 +5,6 @@ from flask import (flash, Flask, g, redirect, render_template,
     request, session, url_for)
 from flask.ext.sqlalchemy import SQLAlchemy
 import twilio.twiml
-from . import constants
-from . import scheduler
 from .users.decorators import login_required, non_login_required
 
 
@@ -48,9 +46,8 @@ if not app.debug:
 
 
 db = SQLAlchemy(app)
-sched = scheduler.AlarmScheduler()
 
-from .task_manager import TaskManager
+from .celery.task_manager import TaskManager
 task_manager = TaskManager()
 
 from app.alarms.models import Alarm
@@ -82,9 +79,6 @@ def format_alarm_time(alarm_time):
 
 def format_alarm_status(status):
     return 'ACTIVE' if status else 'INACTIVE'
-
-def format_user_status(status):
-    return constants.USER_STATUS[status]
 
 def format_user_date(user_date):
     return user_date.strftime('%b %d, %Y')
@@ -201,6 +195,5 @@ def admin_panel():
 # Add some filters to jinja
 app.jinja_env.filters['format_alarm_time'] = format_alarm_time
 app.jinja_env.filters['format_alarm_status'] = format_alarm_status
-app.jinja_env.filters['format_user_status'] = format_user_status
 app.jinja_env.filters['format_user_date'] = format_user_date
 app.jinja_env.filters['format_phone_number'] = format_phone_number

@@ -3,9 +3,9 @@ from __future__ import absolute_import
 import logging
 from twilio.rest import TwilioRestClient
 
-from app.celery import celery
-from app.phones.models import Phone
-from app.users.models import User
+from . import celery
+from ..phones.models import Phone
+from ..users.models import User
 
 #TODO Move these
 TWILIO_ACCOUNT_ID = 'AC52113fd0906659e7c6091e1c5d754ac7'
