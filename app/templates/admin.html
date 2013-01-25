@@ -2,7 +2,6 @@
 {% block hero_title %}Alarm Away Admin Page{% endblock %}
 {% block hero_subtitle %}View all data in the current application context.{% endblock %}
 {% block content %}
-<div class="row well well-large major-container">
   <div class="row row-zero">
     <div class="span10 offset1 t-left">
       <table class="table table-bordered table-striped table-condensed">
@@ -26,7 +25,7 @@
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
             <td>{{ user.timezone }}</td>
-            <td>{{ user.created }}</td>
+            <td>{{ user.created|format_user_date }}</td>
             <td>{{ user.getRole() }}</td>
           </tr>
         {% endfor %}
@@ -51,7 +50,7 @@
         {% for phone in phones %}
           <tr>
             <td><strong>{{ phone.id }}</strong></td>
-            <td>{{ phone.number }}</td>
+            <td>{{ phone.number|format_phone_number }}</td>
             <td>{{ phone.owner_id }}</td>
             <td>{{ phone.verified }}</td>
             <td>{{ phone.created|format_user_date }}</td>
@@ -81,9 +80,9 @@
           <tr>
             <td><strong>{{ alarm.id }}</strong></td>
             <td>{{ alarm.owner.id }}, {{ alarm.owner.name }}</td>
-            <td>{{ alarm.phone.id }}, {{ alarm.phone.number }}</td>
-            <td>{{ alarm.time }}</td>
-            <td>{{ alarm.getLocal() }}</td>
+            <td>{{ alarm.phone.id }}, {{ alarm.phone.number|format_phone_number }}</td>
+            <td>{{ alarm.time|format_alarm_time }}</td>
+            <td>{{ alarm.get_local()|format_alarm_time }}</td>
             <td>{{ alarm.active }}</td>
             <td>{{ alarm.created|format_user_date }}</td>
           </tr>
@@ -92,5 +91,37 @@
       </table>
     </div>
   </div>
-</div>
+  <div class="row row-zero">
+    <div class="span10 offset1 t-left">
+      <table class="table table-bordered table-striped table-condensed">
+        <caption><h3 class="t-center">Managed Tasks</h3></caption>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Celery task id</th>
+            <th>Alarm (id, time)</th>
+            <th>Phone (id, number)</th>
+            <th>User (id, name)</th>
+            <th>Return id</th>
+            <th>Started</th>
+            <th>Ended</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for task in tasks %}
+          <tr>
+            <td><strong>{{ task.id }}</strong></td>
+            <td>{{ task.task_id }}</td>
+            <td>{% if task.alarm is not none %}{{ task.alarm.id }}, {{ task.alarm.time|format_alarm_time }}{% else %}N/A{% endif %}</td>
+            <td>{% if task.phone is not none %}{{ task.phone.id }}, {{ task.phone.number|format_phone_number }}{% else %}N/A{% endif %}</td>
+            <td>{% if task.user is not none %}{{ task.user.id }}, {{ task.user.name }}{% else %}N/A{% endif %}</td>
+            <td>{{ task.return_id }}</td>
+            <td>{{ task.started|format_user_date }}</td>
+            <td>{% if task.ended is not none %}{{ task.ended|format_user_date }}{% else %}N/A{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 {% endblock %}

@@ -53,7 +53,7 @@ task_manager = TaskManager()
 from app.alarms.models import Alarm
 from app.phones.models import Phone
 from app.users.models import User
-
+from app.celery.models import ManagedTask
 
 from app.phones.views import mod as phonesModule
 app.register_blueprint(phonesModule)
@@ -190,6 +190,7 @@ def admin_panel():
         users=User.query.all(),
         alarms=Alarm.query.all(),
         phones=Phone.query.all(),
+        tasks=ManagedTask.query.all(),
     )
 
 # Add some filters to jinja

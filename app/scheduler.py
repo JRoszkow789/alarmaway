@@ -7,29 +7,6 @@ from . import aa_comm
 
 celery = Celery(__name__)
 
-import ccconfig as celeryconfig
-celery.config_from_object('celeryconfig')
-
-
-def get_db():
-    """Opens a new database connection"""
-    mysql_db = MySQLdb.connect(
-        host=celeryconfig.DB_HOST,
-        user=celeryconfig.DB_USER,
-        passwd=celeryconfig.DB_PW,
-        port=celeryconfig.DB_PORT,
-        db=celeryconfig.DATABASE)
-    return mysql_db
-
-
-def query_db(query, args=(), one=False):
-    with closing(get_db()) as db:
-        cur = db.cursor()
-        cur.execute(query, args)
-        rv = cur.fetchone() if one else cur.fetchall()
-    return rv
-
-
 class AlarmScheduler:
 
     def __init__(self):
