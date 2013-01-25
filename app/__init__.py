@@ -17,7 +17,7 @@ if not app.debug:
     except KeyError:
         log_file = '%s.log' % __name__
 
-    formatter = logging.Formatter('''
+    mail_formatter = logging.Formatter('''
         Message type:       %(levelname)s
         Location:           %(pathname)s:%(lineno)d
         Module:             %(module)s
@@ -28,8 +28,13 @@ if not app.debug:
 
         %(message)s
         ''')
+    file_formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s -- %(module)s.%(funcName)s: '
+        '%(message)s '
+        '[in %(pathname)s:%(lineno)d]'
+    )
     file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(file_formatter)
 
     # Ensure a root logger exists
     root_logger = logging.getLogger(__name__)
@@ -42,7 +47,6 @@ if not app.debug:
         ]
     for logger in loggers:
         logger.addHandler(file_handler)
-
 
 db = SQLAlchemy(app)
 
