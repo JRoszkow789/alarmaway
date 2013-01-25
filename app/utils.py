@@ -21,6 +21,11 @@ def generate_verification_code():
     new_ver_code = str(random.randint(1000000, 9999999))
     return new_ver_code
 
+def get_timezone_list():
+    """Returns a list of US timezones as indicated in the pytz module.
+    """
+    return pytz.country_timezones('US')
+
 def get_utc(local_tm, tz):
     """Takes a datetime.time() object and a string representing a timezone,
        and uses this information and the pytz library to convert time to UTC.

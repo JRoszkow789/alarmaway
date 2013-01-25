@@ -1,6 +1,7 @@
 from flask.ext.wtf import (Email, Form, PasswordField, Required, SelectField,
     TextField)
-from app.forms import get_timezone_list, PhoneForm
+from ..utils import get_timezone_list
+from ..phones.forms import PhoneForm
 
 class FullRegisterForm(PhoneForm):
     """

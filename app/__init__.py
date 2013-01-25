@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
-from datetime import datetime, timedelta
-import datetime as DateTime
+import datetime
 from flask import (flash, Flask, g, redirect, render_template,
     request, session, url_for)
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -68,13 +67,12 @@ def before_request():
     if 'user_id' in session:
         g.user = User.query.filter_by(id=session['user_id']).first()
 
-
 def format_alarm_time(alarm_time):
     """Formats a datetime.time object for human-friendly output.
        Used within Jinja templates.
     """
-    if not isinstance(alarm_time, DateTime.time):
-        alarm_time = datetime(alarm_time).time()
+    if not isinstance(alarm_time, datetime.time):
+        alarm_time = datetime.datetime(alarm_time).time()
     return alarm_time.strftime('%I:%M %p')
 
 def format_alarm_status(status):
@@ -85,53 +83,6 @@ def format_user_date(user_date):
 
 def format_phone_number(num):
     return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
-
-def get_alarm_status(alarm_id):
-    """Takes an alarm_id as a parameter and looks up the given alarm's
-       corresponding alarm events. Returns 0 or 1, representing the alarm
-       having any active alarm_events or having no active events, respectively
-    """
-    active_alarm_events = query_db("""
-        select event_id, event_owner from alarm_events
-        where event_owner=%s and event_status=%s limit 1
-        """, (alarm_id, 1), one=True)
-    return 0 if not active_alarm_events else 1
-
-def get_alarm_time(alarm_timedelta):
-    return (datetime.min + alarm_timedelta).time()
-
-
-def get_next_run_datetime(alarm_time):
-    now = datetime.utcnow()
-    if alarm_time > now.time():
-        run_time = datetime(
-            year=now.year, month=now.month, day=now.day,
-            hour=alarm_time.hour, minute=alarm_time.minute
-        )
-    else:
-        tomorrow = now + timedelta(days=1)
-        run_time = datetime(
-            year=tomorrow.year, month=tomorrow.month, day=tomorrow.day,
-            hour=alarm_time.hour, minute=alarm_time.minute
-        )
-    return run_time
-
-def get_recent_alarms(phone_id):
-    cur_alarms = [
-        alarm for alarm in query_db(
-        'select alarm_id, alarm_time from alarms where alarm_phone=%s' % (
-        phone_id)) if get_alarm_status(alarm['alarm_id'])
-    ]
-    for alarm in cur_alarms:
-        alarm['alarm_time'] = get_alarm_time(alarm['alarm_time'])
-        alarm['next_run_time'] = get_next_run_datetime(alarm['alarm_time'])
-        alarm['prev_run_time'] = alarm['next_run_time'] - timedelta(days=1)
-    return [
-        alarm['alarm_id'] for alarm in cur_alarms if (timedelta(seconds=0) < (
-        datetime.utcnow() - alarm['prev_run_time']) < timedelta(seconds=3600)
-    )]
-
-
 
 @app.errorhandler(404)
 def page_not_found(error):
