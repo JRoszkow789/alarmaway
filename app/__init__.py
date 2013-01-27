@@ -3,7 +3,6 @@ import datetime
 from flask import (flash, Flask, g, redirect, render_template,
     request, session, url_for)
 from flask.ext.sqlalchemy import SQLAlchemy
-import twilio.twiml
 from .users.decorators import login_required, non_login_required
 
 
@@ -103,32 +102,6 @@ def server_error(error):
 @non_login_required()
 def home():
     return render_template('index.html')
-
-@app.route('/twimlio', methods=['POST'])
-def alarm_response():
-    from_number = request.values.get('From', None)
-    app.logger.debug('sms response received! from: %s, mod: %s' % (
-        from_number, from_number[2:]))
-    from_number = from_number[2:]
-    from_id = get_phone_id(from_number)
-    if not from_id:
-        generate_join_message(new_number=from_number)
-        return
-    cur_alarms = get_recent_alarms(from_id)
-    app.logger.debug('from_id: %s, cur_alarms: %s' % (
-        from_id, (','.join([str(a) for a in cur_alarms]) if cur_alarms else
-        'No Current Alarms'
-    )))
-    if cur_alarms:
-        for alarm in cur_alarms:
-            turn_off_alarm(alarm)
-            schedule_alarm(alarm)
-        resp_message = 'Have a nice day!'
-    else:
-        resp_message = 'No alarms running!'
-    resp = twilio.twiml.Response()
-    resp.sms(resp_message)
-    return str(resp)
 
 @app.route('/checkit')
 @login_required
