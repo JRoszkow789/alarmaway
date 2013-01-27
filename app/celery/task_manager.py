@@ -92,3 +92,7 @@ class TaskManager:
         alarm.active = False
         self.db.session.add(alarm)
         self.db.session.commit()
+
+
+    def processAlarmResponse(self, alarm):
+        print('TaskManager.processAlarmResponse: {}'.format(alarm))

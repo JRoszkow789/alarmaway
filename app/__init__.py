@@ -63,6 +63,8 @@ from app.users.views import mod as usersModule
 app.register_blueprint(usersModule)
 from app.alarms.views import mod as alarmsModule
 app.register_blueprint(alarmsModule)
+from app.responses.views import mod as responsesModule
+app.register_blueprint(responsesModule)
 
 @app.before_request
 def before_request():
