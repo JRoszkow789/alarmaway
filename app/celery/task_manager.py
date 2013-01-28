@@ -1,10 +1,13 @@
 from __future__ import absolute_import
 import datetime
+import logging
 
 from . import celery
 from . import tasks
 from .models import ManagedTask
 from ..users.models import User
+
+logger = logging.getLogger(__name__)
 
 def get_alarm_schedule(alarm):
     now = datetime.datetime.utcnow().replace(tzinfo=None)
@@ -95,4 +98,7 @@ class TaskManager:
 
 
     def processAlarmResponse(self, alarm):
-        print('TaskManager.processAlarmResponse: {}'.format(alarm))
+        #TODO this is a hack
+        logger.debug("Processing alarm response for alarm {}".format(alarm))
+        self.processSetAlarm(alarm)
+        self.processUnsetAlarm(alarm)
