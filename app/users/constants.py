@@ -2,7 +2,7 @@
 INACTIVE = 0
 FREE = 1
 PREMIUM = 2
-USER_STATUS = {
+STATUS = {
     INACTIVE: 'Inactive',
     FREE: 'Free',
     PREMIUM: 'Premium',
@@ -14,7 +14,7 @@ TEST = 1
 STAFF = 2
 ADMIN = 3
 SUPER = 7
-USER_ROLE = {
+ROLE = {
     USER: 'user',
     TEST: 'test',
     STAFF: 'staff',

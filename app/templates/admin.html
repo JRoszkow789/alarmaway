@@ -2,7 +2,6 @@
 {% block hero_title %}Alarm Away Admin Page{% endblock %}
 {% block hero_subtitle %}View all data in the current application context.{% endblock %}
 {% block content %}
-<div class="row well well-large major-container">
   <div class="row row-zero">
     <div class="span10 offset1 t-left">
       <table class="table table-bordered table-striped table-condensed">
@@ -11,7 +10,9 @@
           <tr>
             <th>User ID</th>
             <th>Status</th>
+            <th>Name</th>
             <th>Email</th>
+            <th>Timezone</th>
             <th>Registered</th>
             <th>Role</th>
           </tr>
@@ -19,11 +20,13 @@
         <tbody>
         {% for user in users %}
           <tr>
-            <td><strong>{{ user.user_id }}</strong></td>
-            <td>{{ user.user_status }}</td>
-            <td>{{ user.user_email }}</td>
-            <td>{{ user.user_register }}</td>
-            <td>{{ user.user_role }}</td>
+            <td><strong>{{ user.id }}</strong></td>
+            <td>{{ user.getStatus() }}</td>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.timezone }}</td>
+            <td>{{ user.created|format_user_date }}</td>
+            <td>{{ user.getRole() }}</td>
           </tr>
         {% endfor %}
         </tbody>
@@ -33,7 +36,7 @@
   <div class="row row-zero">
     <div class="span10 offset1 t-left">
       <table class="table table-bordered table-striped table-condensed">
-        <caption><h3 class="t-center">User Phones</h3></caption>
+        <caption><h3 class="t-center">Phones</h3></caption>
         <thead>
           <tr>
             <th>Phone ID</th>
@@ -46,36 +49,11 @@
         <tbody>
         {% for phone in phones %}
           <tr>
-            <td><strong>{{ phone.phone_id }}</strong></td>
-            <td>{{ phone.phone_number }}</td>
-            <td>{{ phone.phone_owner }}</td>
-            <td>{{ phone.phone_verified }}</td>
-            <td>{{ phone.phone_added }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div class="row row-zero">
-    <div class="span10 offset1 t-left">
-      <table class="table table-bordered table-striped table-condensed">
-        <caption><h3 class="t-center">User Properties</h3></caption>
-        <thead>
-          <tr>
-            <th>User Property ID</th>
-            <th>Owner ID</th>
-            <th>Key</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for prop in user_properties %}
-          <tr>
-            <td><strong>{{ prop.up_id }}</strong></td>
-            <td>{{ prop.up_user }}</td>
-            <td>{{ prop.up_key }}</td>
-            <td>{{ prop.up_value }}</td>
+            <td><strong>{{ phone.id }}</strong></td>
+            <td>{{ phone.number|format_phone_number }}</td>
+            <td>{{ phone.owner_id }}</td>
+            <td>{{ phone.verified }}</td>
+            <td>{{ phone.created|format_user_date }}</td>
           </tr>
         {% endfor %}
         </tbody>
@@ -89,20 +67,24 @@
         <thead>
           <tr>
             <th>Alarm ID</th>
-            <th>Alarm Owner ID</th>
-            <th>Alarm Phone ID</th>
-            <th>Alarm Time</th>
+            <th>Alarm Owner (id, name)</th>
+            <th>Alarm Phone (id, number)</th>
+            <th>Alarm Time (utc)</th>
+            <th>Alarm Local Time</th>
             <th>Alarm Status</th>
+            <th>Alarm Created</th>
           </tr>
         </thead>
         <tbody>
         {% for alarm in alarms %}
           <tr>
-            <td><strong>{{ alarm.alarm_id }}</strong></td>
-            <td>{{ alarm.alarm_owner }}</td>
-            <td>{{ alarm.alarm_phone }}</td>
-            <td>{{ alarm.alarm_time }}</td>
-            <td>{{ alarm.alarm_active }}</td>
+            <td><strong>{{ alarm.id }}</strong></td>
+            <td>{{ alarm.owner.id }}, {{ alarm.owner.name }}</td>
+            <td>{{ alarm.phone.id }}, {{ alarm.phone.number|format_phone_number }}</td>
+            <td>{{ alarm.time|format_alarm_time }}</td>
+            <td>{{ alarm.get_local()|format_alarm_time }}</td>
+            <td>{{ alarm.active }}</td>
+            <td>{{ alarm.created|format_user_date }}</td>
           </tr>
         {% endfor %}
         </tbody>
@@ -112,77 +94,34 @@
   <div class="row row-zero">
     <div class="span10 offset1 t-left">
       <table class="table table-bordered table-striped table-condensed">
-        <caption><h3 class="t-center">Alarm Events</h3></caption>
+        <caption><h3 class="t-center">Managed Tasks</h3></caption>
         <thead>
           <tr>
-            <th>Event ID</th>
-            <th>Owner ID</th>
-            <th>Status</th>
-            <th>Start Time</th>
-            <th>End Time</th>
+            <th>ID</th>
+            <th>Celery task id</th>
+            <th>Alarm (id, time)</th>
+            <th>Phone (id, number)</th>
+            <th>User (id, name)</th>
+            <th>Return id</th>
+            <th>Started</th>
+            <th>Ended</th>
           </tr>
         </thead>
         <tbody>
-        {% for event in alarm_events %}
+        {% for task in tasks %}
           <tr>
-            <td><strong>{{ event.event_id }}</strong></td>
-            <td>{{ event.event_owner }}</td>
-            <td>{{ event.event_status }}</td>
-            <td>{{ event.event_start }}</td>
-            <td>{{ event.event_end }}</td>
+            <td><strong>{{ task.id }}</strong></td>
+            <td>{{ task.task_id }}</td>
+            <td>{% if task.alarm is not none %}{{ task.alarm.id }}, {{ task.alarm.time|format_alarm_time }}{% else %}N/A{% endif %}</td>
+            <td>{% if task.phone is not none %}{{ task.phone.id }}, {{ task.phone.number|format_phone_number }}{% else %}N/A{% endif %}</td>
+            <td>{% if task.user is not none %}{{ task.user.id }}, {{ task.user.name }}{% else %}N/A{% endif %}</td>
+            <td>{{ task.return_id }}</td>
+            <td>{{ task.started|format_user_date }}</td>
+            <td>{% if task.ended is not none %}{{ task.ended|format_user_date }}{% else %}N/A{% endif %}</td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
-  <div class="row row-zero">
-    <div class="span10 offset1 t-left">
-      <table class="table table-bordered table-striped table-condensed">
-        <caption><h3 class="t-center">Jobs</h3></caption>
-        <thead>
-          <tr>
-            <th>Job ID</th>
-            <th>Parent ID</th>
-            <th>Task ID</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for job in jobs %}
-          <tr>
-            <td><strong>{{ job.job_id }}</strong></td>
-            <td>{{ job.job_parent }}</td>
-            <td>{{ job.job_task_id }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div class="row row-zero">
-    <div class="span10 offset1 t-left">
-      <table class="table table-bordered table-striped table-condensed">
-        <caption><h3 class="t-center">Responses</h3></caption>
-        <thead>
-          <tr>
-            <th>Response ID</th>
-            <th>From</th>
-            <th>Received</th>
-            <th>Message</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for resp in responses %}
-          <tr>
-            <td><strong>{{ resp.response_id }}</strong></td>
-            <td>{{ resp.response_from }}</td>
-            <td>{{ resp.response_received }}</td>
-            <td>{{ resp.response_msg }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
 {% endblock %}
