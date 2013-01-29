@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function
-from flask import (Blueprint, g, redirect, render_template, request,
+from flask import (Blueprint, flash, g, redirect, render_template, request,
         url_for, session)
 from sqlalchemy.exc import IntegrityError
 import logging

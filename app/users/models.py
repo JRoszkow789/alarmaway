@@ -16,18 +16,33 @@ class User(db.Model):
     status = db.Column(db.SmallInteger, default=USER.FREE)
     role = db.Column(db.SmallInteger, default=USER.USER)
 
-    def __init__(self, name=None, email=None, password=None, timezone=None):
-        self.name = name
+    def __init__(self, email, password, name=None, timezone=None):
         self.email = email
         self.password = password
         self.timezone = timezone
         self.created = datetime.utcnow()
-
-    def getStatus(self):
-        return USER.STATUS[self.status]
+        if name is None:
+            name = self.email.split('@')[0]
+        self.name = User.make_unique_name(name)
 
     def getRole(self):
         return USER.ROLE[self.role]
 
     def __repr__(self):
         return "<User {}: {}>".format(self.id, self.name)
+
+    @staticmethod
+    def make_unique_name(name):
+        if not User.query.filter_by(name=name).first():
+            return name
+        version = 2
+        while True:
+            new_name = name + str(version)
+            if not User.query.filter_by(name=new_name).first():
+                break
+            version += 1
+        return new_name
+
+    def getStatus(self):
+        return USER.STATUS[self.status]
+
