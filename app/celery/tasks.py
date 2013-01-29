@@ -4,14 +4,13 @@ import logging
 from twilio.rest import TwilioRestClient
 
 from .celery import celery
+from .config import (
+    TWILIO_FROM_NUMBER, TWILIO_ACCOUNT_ID, TWILIO_SECRET_TOKEN,
+    DEFAULT_CALL_URL
+)
 from ..phones.models import Phone
 from ..users.models import User
 
-#TODO Move these
-TWILIO_ACCOUNT_ID = 'AC52113fd0906659e7c6091e1c5d754ac7'
-TWILIO_SECRET_TOKEN = '799a5ee66e106ca62f1f2fff8ba24220'
-TWILIO_FROM_NUMBER = '8133584864'
-DEFAULT_CALL_URL = 'http://canopyinnovation.com/twresp.xml'
 
 logger = logging.getLogger(__name__)
 
