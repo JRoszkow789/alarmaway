@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function
-from flask import (Blueprint, flash, g, redirect, render_template, request,
+from flask import (Blueprint, g, redirect, render_template, request,
         url_for, session)
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -11,7 +11,7 @@ from .decorators import login_required, non_login_required
 from .forms import FullRegisterForm, LoginForm
 from .models import User
 from ..phones.models import Phone
-from ..phones.forms import PhoneVerificationForm
+from ..phones.forms import PhoneForm, PhoneVerificationForm
 
 mod = Blueprint('users', __name__, url_prefix='/users')
 logger = logging.getLogger(__name__)
@@ -91,11 +91,15 @@ def home():
 
     user = g.user
     need_verify_phone, form = None, None
-    for phone in user.phones:
-        if not phone.verified:
-            need_verify_phone = phone.id
-            form = PhoneVerificationForm(request.form)
-            break
+    phones = user.phones.all()
+    if not phones:
+        form = PhoneForm(request.form)
+    else:
+        for phone in phones:
+            if not phone.verified:
+                need_verify_phone = phone.id
+                form = PhoneVerificationForm(request.form)
+                break
     return render_template('users/home.html',
         user=user,
         verify_phone=need_verify_phone,

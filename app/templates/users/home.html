@@ -32,7 +32,23 @@
 </div>
 {% endblock %}
 {% block content %}
-{% if verify_phone %}
+{% if not user.phones.all() %}
+  <div class="row row-zero">
+    <div class="alert alert-success t-center">
+      <h3>Add a phone number!</h3>
+      <p>To utilize the AlarmAway service you need to connect your phone. A
+        cell phone works best!
+      </p>
+      <form action="{{ url_for('phones.add') }}" method="POST"
+          class="form-inline">
+        {{ form.csrf_token }}
+        <strong>{{ form.phone_number.label }}</strong>
+        {{ form.phone_number }}
+        <input type="submit" class="btn btn-primary" value="submit">
+      </form>
+    </div>
+  </div>
+{% elif verify_phone %}
   <div class="row zero-row">
     <div class="alert alert-error t-center">
       <h4>Verify Your Phone Number!</h4>
