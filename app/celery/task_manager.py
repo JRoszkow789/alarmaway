@@ -2,8 +2,8 @@ from __future__ import absolute_import
 import datetime
 import logging
 
-from . import celery
 from . import tasks
+from .celery import celery
 from .models import ManagedTask
 from ..users.models import User
 
@@ -44,9 +44,9 @@ class TaskManager:
     def __init__(self, db=None):
         if db is not None:
             self.db = db
-        else:
-            from app import db as app_db
-            self.db = app_db
+
+    def init_db(self, db):
+        self.db = db
 
     def test_db(self, email=None):
         user = User.query.filter_by(email=email).first()

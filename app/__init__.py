@@ -49,8 +49,9 @@ if not app.debug:
 
 db = SQLAlchemy(app)
 
-from .celery.task_manager import TaskManager
+from .celery import TaskManager
 task_manager = TaskManager()
+task_manager.init_db(db)
 
 from app.alarms.models import Alarm
 from app.phones.models import Phone

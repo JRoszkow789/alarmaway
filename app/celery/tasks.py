@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import logging
 from twilio.rest import TwilioRestClient
 
-from . import celery
+from .celery import celery
 from ..phones.models import Phone
 from ..users.models import User
 
