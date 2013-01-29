@@ -148,4 +148,4 @@ def logout():
 
     session.pop('verification_code', None)
     session.pop('user_id', None)
-    return redirect(url_for('home'))
+    return redirect(url_for('frontend.home'))

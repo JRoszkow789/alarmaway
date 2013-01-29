@@ -1,9 +1,8 @@
 from __future__ import absolute_import, division, print_function
 import datetime
-from flask import (flash, Flask, g, redirect, render_template,
-    request, session, url_for)
+
+from flask import Flask, g, render_template, request, session
 from flask.ext.sqlalchemy import SQLAlchemy
-from .users.decorators import login_required, non_login_required
 
 
 app = Flask(__name__)
@@ -53,10 +52,7 @@ from .celery import TaskManager
 task_manager = TaskManager()
 task_manager.init_db(db)
 
-from app.alarms.models import Alarm
-from app.phones.models import Phone
 from app.users.models import User
-from app.celery.models import ManagedTask
 
 from app.phones.views import mod as phonesModule
 app.register_blueprint(phonesModule)
@@ -66,6 +62,10 @@ from app.alarms.views import mod as alarmsModule
 app.register_blueprint(alarmsModule)
 from app.responses.views import mod as responsesModule
 app.register_blueprint(responsesModule)
+from app.frontend.views import mod as frontendModule
+app.register_blueprint(frontendModule)
+from app.admin.views import mod as adminModule
+app.register_blueprint(adminModule)
 
 @app.before_request
 def before_request():
@@ -100,28 +100,6 @@ def page_not_found(error):
 def server_error(error):
     app.logger.error(error)
     return render_template('500.html'), 500
-
-@app.route('/')
-@non_login_required()
-def home():
-    return render_template('index.html')
-
-@app.route('/checkit')
-@login_required
-def admin_panel():
-    if g.user.email.lower() not in app.config['SUPER_USERS']:
-        flash(
-            'You do not have the proper credentials to view this page.',
-            'error',
-        )
-        return redirect(url_for('user_home'))
-
-    return render_template('admin.html',
-        users=User.query.all(),
-        alarms=Alarm.query.all(),
-        phones=Phone.query.all(),
-        tasks=ManagedTask.query.all(),
-    )
 
 # Add some filters to jinja
 app.jinja_env.filters['format_alarm_time'] = format_alarm_time
