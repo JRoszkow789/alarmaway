@@ -109,7 +109,6 @@ def home():
 @app.route('/checkit')
 @login_required
 def admin_panel():
-    #TODO This should be handled in decorator i think.
     if g.user.email.lower() not in app.config['SUPER_USERS']:
         flash(
             'You do not have the proper credentials to view this page.',

@@ -59,7 +59,6 @@ def register():
             form.phone_number.errors.append(
                 "Number already associated with an account."
                 )
-            #TODO this needs to be redirect(phones.add page or something
             # Although the phone add was unsucessful, the user was already
             # added to the database. This situation needs to be handled.
             session['user_id'] = new_user.id

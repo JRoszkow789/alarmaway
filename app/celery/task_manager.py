@@ -10,6 +10,8 @@ from ..users.models import User
 logger = logging.getLogger(__name__)
 
 def get_alarm_schedule(alarm):
+    """Returns a list of datetimes as a "schedule" for the given alarm."""
+
     now = datetime.datetime.utcnow().replace(tzinfo=None)
     if alarm.time > now.time():
         base_time = now.replace(
@@ -29,7 +31,7 @@ def get_alarm_schedule(alarm):
             tzinfo=None,
             )
 
-    #TODO
+    #This can probably be done a little nicer/more programatically.
     times = [
         base_time,
         base_time + datetime.timedelta(seconds=180),
@@ -98,7 +100,11 @@ class TaskManager:
 
 
     def processAlarmResponse(self, alarm):
-        #TODO this is a hack
+        """Handles the process of unsetting and, if neccessary, resetting
+        the given alarm.
+        """
+
+        #This is just a stub for now, more functionality coming soon.
         logger.debug("Processing alarm response for alarm {}".format(alarm))
         self.processSetAlarm(alarm)
         self.processUnsetAlarm(alarm)
