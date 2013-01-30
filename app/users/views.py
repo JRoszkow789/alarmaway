@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function
-from flask import (Blueprint, g, redirect, render_template, request,
+from flask import (Blueprint, flash, g, redirect, render_template, request,
         url_for, session)
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -8,7 +8,7 @@ from werkzeug import check_password_hash, generate_password_hash
 from .. import db, task_manager
 from ..utils import flash_errors, generate_verification_code
 from .decorators import login_required, non_login_required
-from .forms import FullRegisterForm, LoginForm
+from .forms import FullRegisterForm, LoginForm, MainRegisterForm
 from .models import User
 from ..phones.models import Phone
 from ..phones.forms import PhoneForm, PhoneVerificationForm
@@ -25,15 +25,8 @@ def register():
 
     form = FullRegisterForm(request.form)
     if form.validate_on_submit():
-        # Form input is validated, but not checked against database yet.
-        try:
-            #hack while name isnt yet in all forms
-            name = form.name.data
-        except AttributeError:
-            name = form.email.data.split('@')[0]
 
         new_user = User(
-            name=name,
             email=form.email.data,
             password=generate_password_hash(form.password.data),
             timezone = form.timezone.data,
@@ -80,6 +73,35 @@ def register():
         return redirect(url_for('users.home')) # END form.validate_on_submit
     flash_errors(form)
     return render_template('users/register.html', form=form)
+
+@mod.route('/try', methods=['GET', 'POST'])
+def trial():
+    """A view to handle the registration form on the home page."""
+    form = MainRegisterForm(request.form)
+    if form.validate_on_submit():
+        name = None if not form.name.data else form.name.data
+        user = User(
+            email=form.email.data,
+            password=generate_password_hash(form.password.data),
+            name=name,
+            timezone=form.timezone.data,
+        )
+        db.session.add(user)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            form.email.errors.append(
+                "Username/Email associated with an existing account",
+                )
+        else:
+            logger.info("New user registered: {}".format(user))
+            session['user_id'] = user.id
+            flash("Registration complete. Welcome to AlarmAway!")
+            return redirect(url_for('users.home'))
+    flash_errors(form)
+    #This ruins the whole blueprint idea and needs to be fixed
+    return render_template('frontend/index.html', form=form)
+
 
 @mod.route('/home')
 @login_required

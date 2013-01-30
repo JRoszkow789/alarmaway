@@ -54,18 +54,6 @@ task_manager.init_db(db)
 
 from app.users.models import User
 
-from app.phones.views import mod as phonesModule
-app.register_blueprint(phonesModule)
-from app.users.views import mod as usersModule
-app.register_blueprint(usersModule)
-from app.alarms.views import mod as alarmsModule
-app.register_blueprint(alarmsModule)
-from app.responses.views import mod as responsesModule
-app.register_blueprint(responsesModule)
-from app.frontend.views import mod as frontendModule
-app.register_blueprint(frontendModule)
-from app.admin.views import mod as adminModule
-app.register_blueprint(adminModule)
 
 @app.before_request
 def before_request():
@@ -106,3 +94,17 @@ app.jinja_env.filters['format_alarm_time'] = format_alarm_time
 app.jinja_env.filters['format_alarm_status'] = format_alarm_status
 app.jinja_env.filters['format_user_date'] = format_user_date
 app.jinja_env.filters['format_phone_number'] = format_phone_number
+
+
+from app.phones.views import mod as phonesModule
+app.register_blueprint(phonesModule)
+from app.users.views import mod as usersModule
+app.register_blueprint(usersModule)
+from app.alarms.views import mod as alarmsModule
+app.register_blueprint(alarmsModule)
+from app.responses.views import mod as responsesModule
+app.register_blueprint(responsesModule)
+from app.frontend.views import mod as frontendModule
+app.register_blueprint(frontendModule)
+from app.admin.views import mod as adminModule
+app.register_blueprint(adminModule)

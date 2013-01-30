@@ -25,9 +25,10 @@
   <span class="header-dark">Healthier</span> you.
 {% endblock %} 
 {% block hero_extras %}
-  <button class="btn btn-warning btn-large">
-    <strong>Try It Free &raquo;</strong>
-  </button>
+<p class="lead header-dark t-right">
+  And It's Free
+  <button class="btn btn-warning btn-large">Try it now &raquo;</button>
+</p>
 {% endblock %}
 {% block content %}
   <div class="row zero-row">
@@ -44,10 +45,15 @@
       </h3>
       <div class="row">
         <div class="span4 offset1">
-          <a href="{{ url_for('users.register') }}"
-            class="btn btn-warning btn-large btn-block">
-              <strong>Get Started!</strong>
-          </a>
+          <form class="form" action="{{ url_for('users.trial') }}" method="POST">
+            {{ form.csrf_token }}
+            {{ form.name(placeholder="Username (optional)") }}
+            {{ form.email(placeholder="Your email address") }}
+            {{ form.password(placeholder="Create a password") }}
+            {{ form.timezone() }}
+            <input type="submit" class="btn btn-warning btn-large span2"
+              value="Sign up free">
+          </form>
         </div>
       </div>
     </div>
