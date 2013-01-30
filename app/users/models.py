@@ -12,7 +12,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True)
     password = db.Column(db.String(70))
     created = db.Column(db.DateTime(timezone=False))
-    timezone = db.Column(db.String())
+    timezone = db.Column(db.String(50))
     status = db.Column(db.SmallInteger, default=USER.FREE)
     role = db.Column(db.SmallInteger, default=USER.USER)
 
