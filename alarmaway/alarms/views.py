@@ -12,7 +12,7 @@ from .forms import AddUserAlarmForm
 from .models import Alarm
 
 mod = Blueprint('alarms', __name__, url_prefix='/alarms')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('alarmaway')
 
 @mod.route('/add', methods=['GET', 'POST'])
 @login_required

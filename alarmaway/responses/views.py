@@ -7,7 +7,7 @@ from .. import task_manager
 from ..phones.models import Phone
 
 mod = Blueprint('responses', __name__, url_prefix='/responses')
-mod.logger = logging.getLogger(__name__)
+mod.logger = logging.getLogger("alarmaway")
 
 @mod.route('/receive', methods=['POST'])
 def alarm_response():

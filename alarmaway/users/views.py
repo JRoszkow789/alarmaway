@@ -14,7 +14,7 @@ from ..phones.models import Phone
 from ..phones.forms import PhoneForm, PhoneVerificationForm
 
 mod = Blueprint('users', __name__, url_prefix='/users')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("alarmaway")
 
 @mod.route('/register', methods=['GET', 'POST'])
 @non_login_required(alert='Already registered')

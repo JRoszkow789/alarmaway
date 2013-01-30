@@ -1,11 +1,9 @@
 import os
 import unittest
 
-import flask
-
 from config import _basedir
-from app import app, db
-from app.users.models import User
+from alarmaway import app, db
+from alarmaway.users.models import User
 
 
 class AlarmAwayTestCase(unittest.TestCase):

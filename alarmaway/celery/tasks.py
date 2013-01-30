@@ -12,7 +12,7 @@ from ..phones.models import Phone
 from ..users.models import User
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('alarmaway')
 
 client = TwilioRestClient(
     account=TWILIO_ACCOUNT_ID,
@@ -27,7 +27,11 @@ def send_sms_message(phone_id, message, *args, **kwargs):
         from_=TWILIO_FROM_NUMBER,
         body=message,
         )
-    logger.info("sms_message sent: %s" % sms_message)
+    logger.info(
+        "sms_message sent to {num}: {msg}".format(
+            num=phone.number,
+            msg=sms_message,
+    ))
 
 @celery.task
 def send_phone_call(phone_id, message_url=DEFAULT_CALL_URL):
@@ -37,7 +41,11 @@ def send_phone_call(phone_id, message_url=DEFAULT_CALL_URL):
         from_=TWILIO_FROM_NUMBER,
         url=message_url,
         )
-    logger.info("phone call sent: %s" % phone_call)
+    logger.info(
+        "phone call sent to {num}: {call}".format(
+            num=phone.number,
+            call=phone_call,
+    ))
 
 @celery.task
 def greet(name, id=None):

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from datetime import datetime
 
-from app import db
+from .. import db
 
 class Phone(db.Model):
 

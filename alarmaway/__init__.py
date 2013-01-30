@@ -5,15 +5,16 @@ from flask import Flask, g, render_template, request, session
 from flask.ext.sqlalchemy import SQLAlchemy
 
 
-app = Flask(__name__)
+app = Flask('alarmaway')
 app.config.from_object('config')
+db = SQLAlchemy(app)
 
 if not app.debug:
     import logging
     try:
         log_file = app.config['LOG_FILE']
     except KeyError:
-        log_file = '%s.log' % __name__
+        log_file = 'alarmaway.log'
 
     mail_formatter = logging.Formatter('''
         Message type:       %(levelname)s
@@ -35,7 +36,7 @@ if not app.debug:
     file_handler.setFormatter(file_formatter)
 
     # Ensure a root logger exists
-    root_logger = logging.getLogger(__name__)
+    root_logger = logging.getLogger('alarmaway')
     root_logger.setLevel(logging.DEBUG)
 
     loggers = [
@@ -46,13 +47,11 @@ if not app.debug:
     for logger in loggers:
         logger.addHandler(file_handler)
 
-db = SQLAlchemy(app)
-
 from .celery import TaskManager
 task_manager = TaskManager()
 task_manager.init_db(db)
 
-from app.users.models import User
+from .users.models import User
 
 
 @app.before_request
@@ -96,15 +95,15 @@ app.jinja_env.filters['format_user_date'] = format_user_date
 app.jinja_env.filters['format_phone_number'] = format_phone_number
 
 
-from app.phones.views import mod as phonesModule
+from .phones.views import mod as phonesModule
 app.register_blueprint(phonesModule)
-from app.users.views import mod as usersModule
+from .users.views import mod as usersModule
 app.register_blueprint(usersModule)
-from app.alarms.views import mod as alarmsModule
+from .alarms.views import mod as alarmsModule
 app.register_blueprint(alarmsModule)
-from app.responses.views import mod as responsesModule
+from .responses.views import mod as responsesModule
 app.register_blueprint(responsesModule)
-from app.frontend.views import mod as frontendModule
+from .frontend.views import mod as frontendModule
 app.register_blueprint(frontendModule)
-from app.admin.views import mod as adminModule
+from .admin.views import mod as adminModule
 app.register_blueprint(adminModule)
