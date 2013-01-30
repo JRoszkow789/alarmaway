@@ -65,8 +65,7 @@ def remove(alarm_id):
             'error',
         )
     else:
-        db.session.delete(alarm)
-        db.session.commit()
+        task_manager.processRemoveAlarm(alarm)
         flash("Alarm removed!", 'success')
     return redirect(url_for('users.home'))
 

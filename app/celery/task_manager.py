@@ -99,6 +99,31 @@ class TaskManager:
         self.db.session.commit()
 
 
+    def processRemoveAlarm(self, alarm):
+        logger.info("removing alarm {alarm}".format(alarm=alarm.id))
+        tasks = ManagedTask.query.filter_by(alarm=alarm)
+        ready_tasks = tasks.filter_by(ended=None)
+        tasks = tasks.all()
+        ready_tasks = ready_tasks.all()
+        if set(ready_tasks) is not set(tasks):
+            for t in set(tasks) - set(ready_tasks):
+                t.finish()
+                logger.info(
+                    "remove alarm {alarm}: cleaned up task {task}".format(
+                        alarm=alarm.id,
+                        task=t.id,
+                ))
+        for t in tasks:
+            logger.info("remove alarm {alarm}: removing task {task}".format(
+                alarm=alarm.id,
+                task=t.id,
+            ))
+            self.db.session.delete(t)
+        self.db.session.commit()
+        self.db.session.delete(alarm)
+        self.db.session.commit()
+
+
     def processAlarmResponse(self, alarm):
         """Handles the process of unsetting and, if neccessary, resetting
         the given alarm.
