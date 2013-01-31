@@ -2,12 +2,14 @@ from __future__ import absolute_import, division, print_function
 import datetime
 
 from flask import Flask, g, render_template, request, session
+from flask.ext.mail import Mail
 from flask.ext.sqlalchemy import SQLAlchemy
 
 
 app = Flask('alarmaway')
 app.config.from_object('config')
 db = SQLAlchemy(app)
+mail = Mail(app)
 
 if not app.debug:
     import logging
