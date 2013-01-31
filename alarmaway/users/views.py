@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 from flask import (Blueprint, flash, g, redirect, render_template, request,
         url_for, session)
 from sqlalchemy.exc import IntegrityError
-import logging.getLogger
+import logging
 from werkzeug import check_password_hash, generate_password_hash
 
 from .. import db, task_manager

@@ -6,7 +6,7 @@ from .celery import celery
 from .models import ManagedTask
 from ..users.models import User
 
-import logging.getLogger
+import logging
 logger = logging.getLogger('alarmaway')
 
 def get_alarm_schedule(alarm):

@@ -1,5 +1,5 @@
 from flask.ext.mail import Message
-import logging.getLogger
+import logging
 
 from alarmaway import mail
 

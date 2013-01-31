@@ -9,7 +9,7 @@ from ..phones.models import Phone
 from ..users.models import User
 
 mod = Blueprint('admin', __name__, url_prefix='/checkit')
-import logging.getLogger
+import logging
 logger = logging.getLogger("alarmaway")
 
 @mod.route('/main')

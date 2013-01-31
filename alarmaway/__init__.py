@@ -17,10 +17,10 @@ def setup_logging(app):
 
         #Setup email handling
         from logging.handlers import SMTPHandler
-        mail_handler = SMTPHandler(
-            host=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
-            fromaddr=app.config['MAIL_USERNAME'],
-            toaddr=app.config['ADMINS'],
+        mail_handler = SMTPHandler((
+            app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
+            app.config['MAIL_USERNAME'],
+            app.config['ADMINS'],
             subject="alarmaway failure",
             credentials=(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD']),
             secure=(),

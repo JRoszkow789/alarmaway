@@ -11,7 +11,7 @@ from .config import (
 from ..phones.models import Phone
 from ..users.models import User
 
-import logging.getLogger
+import logging
 logger = logging.getLogger('alarmaway')
 
 client = TwilioRestClient(

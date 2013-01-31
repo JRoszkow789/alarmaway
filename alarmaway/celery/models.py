@@ -1,7 +1,7 @@
 from datetime import datetime
 from .. import db
 
-import logging.getLogger
+import logging
 logger = logging.getLogger("alarmaway")
 
 class ManagedTask(db.Model):
