@@ -60,7 +60,11 @@ class TaskManager:
             "following verification code: {}"
             .format(verification_code)
             )
-        tasks.send_sms_message(phone.id, message)
+        async = tasks.send_sms_message.apply_async(
+            args=(phone.id, message),)
+        task = ManagedTask(task_id=async.id, phone=phone)
+        self.db.session.add(task)
+        self.db.session.commit()
 
     def processSetAlarm(self, alarm):
         for count, time in enumerate(get_alarm_schedule(alarm)):
@@ -133,3 +137,21 @@ class TaskManager:
         logger.debug("Processing alarm response for alarm {}".format(alarm))
         self.processSetAlarm(alarm)
         self.processUnsetAlarm(alarm)
+
+    def processWelcomeEmail(self, user):
+        """Provides an easy way to send the user a pre constructed welcome email."""
+
+        logger.debug("Processing welcome email for user {}.".format(user))
+        subject = 'Welcome to AlarmAway!'
+        sender = 'Welcome@AlarmAway.com'
+        body_text = (
+            "Hello {name},\n\nWelcome to AlarmAway, get started now!".format(
+            name=user.name
+        ))
+        async = tasks.send_user_email.apply_async(
+            args=(user.id, subject,),
+            kwargs=dict(sender=sender, body_text=body_text),
+            )
+        task = ManagedTask(task_id=async.id, user=user)
+        self.db.session.add(task)
+        self.db.session.commit()

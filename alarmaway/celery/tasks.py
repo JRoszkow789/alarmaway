@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 from twilio.rest import TwilioRestClient
 
+from .. import emails
 from .celery import celery
 from .config import (
     TWILIO_FROM_NUMBER, TWILIO_ACCOUNT_ID, TWILIO_SECRET_TOKEN,
@@ -46,6 +47,20 @@ def send_phone_call(phone_id, message_url=DEFAULT_CALL_URL):
             num=phone.number,
             call=phone_call,
     ))
+
+@celery.task
+def send_user_email(user_id, subject, *args, **kwargs):
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        #TODO
+        return
+
+    if not 'recipients' in kwargs:
+        kwargs['recipients'] = [user.email]
+    elif user.email not in kwargs['recipients']:
+        kwargs['recipients'].append(user.email)
+
+    emails.send_email(subject, *args, **kwargs)
 
 @celery.task
 def greet(name, id=None):

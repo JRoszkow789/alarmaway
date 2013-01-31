@@ -40,7 +40,8 @@ def register():
                 )
             flash_errors(form)
             return render_template('/users/register.html', form=form)
-
+        else:
+            task_manager.processWelcomeEmail(new_user)
         new_phone = Phone(
             number=form.phone_number.data,
             owner=new_user
@@ -94,6 +95,7 @@ def trial():
                 "Username/Email associated with an existing account",
                 )
         else:
+            task_manager.processWelcomeEmail(user)
             logger.info("New user registered: {}".format(user))
             session['user_id'] = user.id
             flash("Registration complete. Welcome to AlarmAway!")
