@@ -11,3 +11,4 @@ celeryconfig.*
 shell.*
 *.pyc
 *.bak
+scripts/*
