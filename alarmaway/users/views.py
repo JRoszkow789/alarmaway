@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 from flask import (Blueprint, flash, g, redirect, render_template, request,
         url_for, session)
 from sqlalchemy.exc import IntegrityError
-import logging
+import logging.getLogger
 from werkzeug import check_password_hash, generate_password_hash
 
 from .. import db, task_manager
@@ -25,7 +25,6 @@ def register():
 
     form = FullRegisterForm(request.form)
     if form.validate_on_submit():
-
         new_user = User(
             email=form.email.data,
             password=generate_password_hash(form.password.data),
@@ -41,7 +40,9 @@ def register():
             flash_errors(form)
             return render_template('/users/register.html', form=form)
         else:
+            logger.info("New user created: {}".format(new_user))
             task_manager.processWelcomeEmail(new_user)
+
         new_phone = Phone(
             number=form.phone_number.data,
             owner=new_user
@@ -58,20 +59,15 @@ def register():
             session['user_id'] = new_user.id
             flash_errors(form)
             return redirect(url_for('phones.add'))
+        else:
+            logger.info("New phone created: {}".format(new_phone))
+            verification_code = generate_verification_code()
+            task_manager.processPhoneVerification(new_phone, verification_code)
+            session['verification_code'] = verification_code
 
-        verification_code = generate_verification_code()
-        task_manager.processPhoneVerification(new_phone, verification_code)
-        session['verification_code'] = verification_code
         session['user_id'] = new_user.id
-
-        logger.debug(("""
-            Successful user registration.
-            User: {}
-            Phone: {}
-                """
-            .format(new_user, new_phone)
-            ))
         return redirect(url_for('users.home')) # END form.validate_on_submit
+
     flash_errors(form)
     return render_template('users/register.html', form=form)
 
@@ -137,14 +133,8 @@ def account():
     administrative information compared to the typical user home page. I.E
     billing, account status, change password, etc...
     """
-
-    info_msg = ("""
-        VIEW NOT IMPLEMENTED :: users.account
-        user_id: %s, method type: %s"""
-        % (g.user.id, request.method)
-        )
-    logger.debug(info_msg)
-    return info_msg
+    logger.info("View users.account called")
+    return redirect(url_for('users.home'))
 
 @mod.route('/login', methods=['GET', 'POST'])
 @non_login_required(alert='You are already logged in')
@@ -158,8 +148,10 @@ def login():
             form.email.errors.append('Username/email does not exist')
         elif not check_password_hash(user.password, form.password.data):
             form.password.errors.append("Invalid password")
+            logger.info("Invalid password attempt for user {}".format(user))
         else:
             session['user_id'] = user.id
+            logger.info("Successful user login: {}".format(user.id))
             return redirect(url_for('users.home'))
     flash_errors(form)
     return render_template('users/login.html', form=form)
@@ -170,6 +162,8 @@ def logout():
     Logs the user out.
     """
 
-    session.pop('verification_code', None)
-    session.pop('user_id', None)
+    logger.info("Logout popping verification_code {}".format(
+        session.pop('verification_code', "None")))
+    logger.info("Logout popping user_id {}".format(
+        session.pop('user_id', "None")))
     return redirect(url_for('frontend.home'))
