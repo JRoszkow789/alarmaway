@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 import datetime
-import logging
 
 from . import tasks
 from .celery import celery
 from .models import ManagedTask
 from ..users.models import User
 
+import logging.getLogger
 logger = logging.getLogger('alarmaway')
 
 def get_alarm_schedule(alarm):
@@ -65,6 +65,10 @@ class TaskManager:
         task = ManagedTask(task_id=async.id, phone=phone)
         self.db.session.add(task)
         self.db.session.commit()
+        logger.info(
+            "processPhoneVerification successful - phone: {}, task: {}".format(
+                phone, task
+        ))
 
     def processSetAlarm(self, alarm):
         for count, time in enumerate(get_alarm_schedule(alarm)):
@@ -90,7 +94,10 @@ class TaskManager:
         alarm.active = True
         self.db.session.add(alarm)
         self.db.session.commit()
-
+        logger.info(
+            "processSetAlarm successful - alarm: {}, task: {}".format(
+                alarm, task
+        ))
 
     def processUnsetAlarm(self, alarm):
         tasks = ManagedTask.query.filter_by(alarm=alarm, ended=None).all()
@@ -101,10 +108,10 @@ class TaskManager:
         alarm.active = False
         self.db.session.add(alarm)
         self.db.session.commit()
-
+        logger.info("processUnsetAlarm successful - alarm: {}".format(alarm))
 
     def processRemoveAlarm(self, alarm):
-        logger.info("removing alarm {alarm}".format(alarm=alarm.id))
+        a_id = alarm.id #for logging
         tasks = ManagedTask.query.filter_by(alarm=alarm)
         ready_tasks = tasks.filter_by(ended=None)
         tasks = tasks.all()
@@ -126,6 +133,7 @@ class TaskManager:
         self.db.session.commit()
         self.db.session.delete(alarm)
         self.db.session.commit()
+        logger.info("removed alarm {a_id}".format(a_id=a_id))
 
 
     def processAlarmResponse(self, alarm):
@@ -134,14 +142,13 @@ class TaskManager:
         """
 
         #This is just a stub for now, more functionality coming soon.
-        logger.debug("Processing alarm response for alarm {}".format(alarm))
+        logger.info("Processing alarm response for alarm {}".format(alarm))
         self.processSetAlarm(alarm)
         self.processUnsetAlarm(alarm)
 
     def processWelcomeEmail(self, user):
         """Provides an easy way to send the user a pre constructed welcome email."""
 
-        logger.debug("Processing welcome email for user {}.".format(user))
         subject = 'Welcome to AlarmAway!'
         sender = 'Welcome@AlarmAway.com'
         body_text = (
@@ -155,3 +162,5 @@ class TaskManager:
         task = ManagedTask(task_id=async.id, user=user)
         self.db.session.add(task)
         self.db.session.commit()
+        logger.info("processWelcomeEmail success - user: {}, task: {}.".format(
+            user, task))
