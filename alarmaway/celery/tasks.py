@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import logging
 from twilio.rest import TwilioRestClient
 
 from .. import emails
@@ -12,7 +11,7 @@ from .config import (
 from ..phones.models import Phone
 from ..users.models import User
 
-
+import logging.getLogger
 logger = logging.getLogger('alarmaway')
 
 client = TwilioRestClient(

@@ -1,6 +1,9 @@
 from datetime import datetime
 from .. import db
 
+import logging.getLogger
+logger = logging.getLogger("alarmaway")
+
 class ManagedTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.String(70))
@@ -30,4 +33,5 @@ class ManagedTask(db.Model):
         self.ended = None
 
     def finish(self):
+        logger.info("task {} finishing self.".format(self.id))
         self.ended = datetime.utcnow().replace(second=0, microsecond=0, tzinfo=None)
