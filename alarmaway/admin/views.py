@@ -9,10 +9,13 @@ from ..phones.models import Phone
 from ..users.models import User
 
 mod = Blueprint('admin', __name__, url_prefix='/checkit')
+import logging.getLogger
+logger = logging.getLogger("alarmaway")
 
 @mod.route('/main')
 @admin_required
 def admin_panel():
+    logger.info("admin_panel request approved for user: {}".format(g.user))
     return render_template('admin/main.html',
         users=User.query.all(),
         alarms=Alarm.query.all(),
