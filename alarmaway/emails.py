@@ -1,6 +1,9 @@
 from flask.ext.mail import Message
+import logging.getLogger
 
 from alarmaway import mail
+
+logger = logging.getLogger("alarmaway")
 
 def send_email(subject,
     recipients=[],
@@ -19,5 +22,6 @@ def send_email(subject,
         msg.html = body_html
     else:
         msg.body = body_text
-
+    logger.info("sending email to {recipients}: {msg}".format(
+        recipients=recipients, msg=msg))
     mail.send(msg)
