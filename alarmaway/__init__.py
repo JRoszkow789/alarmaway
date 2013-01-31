@@ -11,44 +11,65 @@ app.config.from_object('config')
 db = SQLAlchemy(app)
 mail = Mail(app)
 
-if not app.debug:
-    import logging
-    try:
-        log_file = app.config['LOG_FILE']
-    except KeyError:
-        log_file = 'alarmaway.log'
+def setup_logging(app):
+    if not app.debug:
+        import logging
 
-    mail_formatter = logging.Formatter('''
-        Message type:       %(levelname)s
-        Location:           %(pathname)s:%(lineno)d
-        Module:             %(module)s
-        Function:           %(funcName)s
-        Time:               %(asctime)s
+        #Setup email handling
+        from logging.handlers import SMTPHandler
+        mail_handler = SMTPHandler(
+            host=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
+            fromaddr=app.config['MAIL_USERNAME'],
+            toaddr=app.config['ADMINS'],
+            subject="alarmaway failure",
+            credentials=(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD']),
+            secure=(),
+        )
 
-        Message:
+        mail_formatter = logging.Formatter('''
+            Message type:       %(levelname)s
+            Location:           %(pathname)s:%(lineno)d
+            Module:             %(module)s
+            Function:           %(funcName)s
+            Time:               %(asctime)s
 
-        %(message)s
-        ''')
-    file_formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s -- %(module)s.%(funcName)s: '
-        '%(message)s '
-        '[in %(pathname)s:%(lineno)d]'
-    )
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(file_formatter)
+            Message:
 
-    # Ensure a root logger exists
-    root_logger = logging.getLogger('alarmaway')
-    root_logger.setLevel(logging.DEBUG)
+            %(message)s
+            ''')
+        mail_handler.setFormatter(mail_formatter)
+        mail_handler.setLevel(logging.ERROR)
 
-    loggers = [
-        app.logger,
-        root_logger,
-        logging.getLogger('sqlalchemy'),
+        #Setup File logging
+        try:
+            log_file = app.config['LOG_FILE']
+        except KeyError:
+            log_file = 'alarmaway.log'
+
+        file_handler = logging.FileHandler(log_file)
+        file_formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s -- %(module)s.%(funcName)s: '
+            '%(message)s '
+            '[in %(pathname)s:%(lineno)d]'
+        )
+        file_handler.setFormatter(file_formatter)
+        file_handler.setLevel(logging.DEBUG)
+
+        # Ensure a root logger exists
+        root_logger = logging.getLogger('alarmaway')
+
+        # Add handlers to all known loggers
+        loggers = [
+            app.logger,
+            root_logger,
+            logging.getLogger('sqlalchemy'),
         ]
-    for logger in loggers:
-        logger.addHandler(file_handler)
+        for logger in loggers:
+            logger.addHandler(mail_handler)
+            logger.addHandler(file_handler)
 
+
+setup_logging(app)
 from .celery import TaskManager
 task_manager = TaskManager()
 task_manager.init_db(db)
