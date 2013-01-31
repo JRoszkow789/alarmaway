@@ -12,7 +12,7 @@ from .models import Phone
 from ..users.decorators import login_required
 
 mod = Blueprint('phones', __name__, url_prefix='/phones')
-logger = logging.getLogger('root')
+logger = logging.getLogger("alarmaway")
 
 @mod.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -38,12 +38,12 @@ def add():
         try:
             db.session.commit()
         except IntegrityError, err:
-            logger.debug("Error adding new phone.\n%s" % err)
             form.phone_number.errors.append("Number is already registered.")
         except:
             logger.error("Unknown exception caught in add_phone.\n%s" % err)
             flash("Oops, something went wrong... Please try again.")
         else:
+            logger.info("New phone added {}".format(new_phone))
             verification_code = generate_verification_code()
             task_manager.processPhoneVerification(new_phone, verification_code)
             session['verification_code'] = verification_code
@@ -73,6 +73,13 @@ def verify(phone_id):
     if form.validate_on_submit():
         if form.verification_code.data != session['verification_code']:
             form.verification_code.errors.append('Invalid verification code')
+            logger.info(
+                "Invalid verification attempt - user: {}, "
+                "attempt: {}, correct: {}".format(
+                    g.user,
+                    form.verification_code.data,
+                    session['verification_code'],
+            ))
         else:
             phone.verified = True
             db.session.add(phone)
@@ -85,6 +92,7 @@ def verify(phone_id):
                 )
                 flash('Oops, Something went wrong... Please try again', 'error')
             else:
+                logger.info("phone verified {}".format(phone))
                 flash('Phone successfully verified!', 'success')
                 return redirect(url_for('users.home'))
     flash_errors(form)
@@ -102,6 +110,7 @@ def remove(phone_id):
     if not phone:
         flash("Phone not found or ownership not verified.", 'error')
         return redirect(url_for('users.home'))
+    p_id = phone.id # For logging
     db.session.delete(phone)
     try:
         db.session.commit()
@@ -118,5 +127,6 @@ def remove(phone_id):
             'error',
         )
     else:
+        logger.info("Phone removed {}".format(p_id))
         flash('Phone successfully removed!', 'success')
     return redirect(url_for('users.home'))
