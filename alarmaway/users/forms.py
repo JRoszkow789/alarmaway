@@ -1,5 +1,6 @@
 from flask.ext.wtf import (Email, Form, PasswordField, Required, SelectField,
     TextField)
+from flask.ext.wtf.html5 import EmailField
 from ..utils import get_timezone_list
 from ..phones.forms import PhoneForm
 
@@ -27,5 +28,5 @@ class FullRegisterForm(PhoneForm):
 class LoginForm(Form):
     """A basic login form. Includes an email field and a password field.
     """
-    email = TextField('Email Address', [Required(), Email()])
+    email = EmailField('Email Address', [Required(), Email()])
     password = PasswordField('Password', [Required()])
