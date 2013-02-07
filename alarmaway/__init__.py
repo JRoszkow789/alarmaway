@@ -5,7 +5,6 @@ from flask import Flask, g, render_template, request, session
 from flask.ext.mail import Mail
 from flask.ext.sqlalchemy import SQLAlchemy
 
-
 app = Flask('alarmaway')
 app.config.from_object('config')
 db = SQLAlchemy(app)
@@ -68,20 +67,39 @@ def setup_logging(app):
             logger.addHandler(mail_handler)
             logger.addHandler(file_handler)
 
+def setup_application_handlers(app):
+
+    from .users.forms import LoginForm
+    from .users.models import User
+
+    @app.before_request
+    def before_request():
+        g.user = None
+        if 'user_id' in session:
+            g.user = User.query.filter_by(id=session['user_id']).first()
+
+    @app.errorhandler(404)
+    def page_not_found(error):
+        path = request.path
+        app.logger.debug('%s\nPath: %s' % (error, path))
+        form = LoginForm(request.form)
+        return render_template('404.html', signin_form=form), 404
+
+    @app.errorhandler(500)
+    def server_error(error):
+        app.logger.error(error)
+        form = LoginForm(request.form)
+        return render_template('500.html', signin_form=form), 500
+
 
 setup_logging(app)
 from .celery import TaskManager
 task_manager = TaskManager()
 task_manager.init_db(db)
 
-from .users.models import User
+setup_application_handlers(app)
 
 
-@app.before_request
-def before_request():
-    g.user = None
-    if 'user_id' in session:
-        g.user = User.query.filter_by(id=session['user_id']).first()
 
 def format_alarm_time(alarm_time):
     """Formats a datetime.time object for human-friendly output.
@@ -99,17 +117,6 @@ def format_user_date(user_date):
 
 def format_phone_number(num):
     return "(%s) %s-%s" % (num[:3], num[3:6], num[6:])
-
-@app.errorhandler(404)
-def page_not_found(error):
-    path = request.path
-    app.logger.debug('%s\nPath: %s' % (error, path))
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def server_error(error):
-    app.logger.error(error)
-    return render_template('500.html'), 500
 
 # Add some filters to jinja
 app.jinja_env.filters['format_alarm_time'] = format_alarm_time
