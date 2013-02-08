@@ -103,8 +103,9 @@
         {% endif %}
       {% endfor %}
     {% else %}
-      <div class="alert">
-        <p class="lead centered"><a href="{{ url_for('phones.add') }}">Add a phone &raquo;</a></p>
+      <div class="alert alert-info">
+        <h4 class="centered">You don't have any phones yet!</h4>
+        <p class="centered" id="no-phones-add-button-container"><a href="{{ url_for('phones.add') }}" class="btn btn-primary">Add a phone &raquo;</a></p>
       </div>
     {% endif %}
   </div>
@@ -127,6 +128,9 @@
 {% block footer_addin %}
 <script type="text/javascript">
   $(document).ready(function() {
+    /*This is probably really dumb to do with jQuery, for no reason. */
+    $('#no-phones-add-button-container').css('margin-top', '+=15px');
+
     $('#verify-phone-button').click(function() {
       $('#verify-phone-form').toggleClass('hidden');
       $('#remove-phone-link').toggleClass('hidden');
