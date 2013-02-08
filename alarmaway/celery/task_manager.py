@@ -146,6 +146,32 @@ class TaskManager:
         self.processSetAlarm(alarm)
         self.processUnsetAlarm(alarm)
 
+    def processRemovePhone(self, phone):
+        """Handle removing a phone and any associated objects"""
+
+        p_id = phone.id
+        alarms = phone.alarms.all()
+        for alarm in alarms:
+            self.processRemoveAlarm(alarm)
+        tasks = ManagedTask.query.filter_by(phone=phone)
+        ready_tasks = tasks.filter_by(ended=None)
+        tasks = tasks.all()
+        if set(ready_tasks) is not set(tasks):
+            for t in set(tasks) - set(ready_tasks):
+                t.finish()
+                logger.info(
+                    "remove phone {}: cleaned up tasks {}".format(
+                    phone.id, t.id
+                ))
+        for t in tasks:
+            logger.info(
+                "remove phone {}: removing task {}".format(phone.id, t.id))
+            self.db.session.delete(t)
+        self.db.session.commit()
+        self.db.session.delete(phone)
+        self.db.session.commit()
+        logger.info("Removed phone {}".format(p_id))
+
     def processWelcomeEmail(self, user):
         """Provides an easy way to send the user a pre constructed welcome email."""
 

@@ -71,28 +71,12 @@ def remove(phone_id):
     then attempts to delete the phone from db and alerts user of status.
     """
 
-    phone = Phone.query.filter_by(id=phone_id, owner=g.user).first()
-    if not phone:
-        flash("Phone not found or ownership not verified.", 'error')
-        return redirect(url_for('users.home'))
-    p_id = phone.id # For logging
-    db.session.delete(phone)
-    try:
-        db.session.commit()
-    except Exception, err:
-        logger.error("""
-            Couldnt commit phone deletion.
-            Phone id: %s, user id: %s
-            user's phones: %s
-            message: %s
-            """ % (phone.id, g.user.id, g.user.phones, err)
-        )
-        flash(
-            "Oops, something didnt work right, please try again.",
-            'error',
-        )
+    phone = Phone.query.filter_by(id=phone_id, owner=g.user).first_or_404()
+
+    if phone.alarms.filter_by(active=True).first():
+        flash("Phone tied to an active alarm. Deactivate the alarm first.")
     else:
-        logger.info("Phone removed {}".format(p_id))
+        task_manager.processRemovePhone(phone)
         flash('Phone successfully removed!', 'success')
     return redirect(url_for('users.home'))
 
