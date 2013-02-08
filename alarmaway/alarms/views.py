@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 from flask import (Blueprint, flash, g, redirect, render_template,
-    request, url_for
+    request, session, url_for
 )
 
-from .. import db, task_manager
+from .. import db, task_manager, format_phone_number
 from ..utils import get_utc
 from ..phones.models import Phone
 from ..users.decorators import login_required
@@ -25,7 +25,7 @@ def add():
     user = g.user
     form = AddUserAlarmForm(request.form)
     form.phone_number.choices = [
-        (phone.id, phone.number)
+        (phone.id, format_phone_number(phone.number))
         for phone in user.phones
     ]
     if form.validate_on_submit():
@@ -49,8 +49,15 @@ def add():
             logger.info("New alarm created {}".format(alarm))
             task_manager.processSetAlarm(alarm)
             flash('Your alarm has been created and set', 'success')
+            session.pop('firstalarm', None)
         return redirect(url_for('users.home'))
-    return render_template('alarms/add.html', form=form)
+
+    if session.get('firstalarm', False):
+        template_name = 'firstalarm'
+    else:
+        template_name = 'add'
+
+    return render_template('alarms/'+template_name+'.html', form=form)
 
 @mod.route('/remove/<alarm_id>')
 @login_required

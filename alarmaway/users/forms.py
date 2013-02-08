@@ -9,12 +9,20 @@ class MainRegisterForm(Form):
     username(optional), email, password, timezone.
     """
 
-    name = TextField('Username (optional)',)
+    name = TextField('Username', [Required(),])
     email = TextField('Email address', [Required(), Email()])
     password = PasswordField('Password', [Required(),])
     timezone = SelectField('Timezone', [Required(),],
         choices=([(None, 'Choose your timezone...'),]
             + [(timezone, timezone) for timezone in get_timezone_list()]))
+
+    def validate(self):
+        rv = Form.validate(self)
+        if not rv:
+            return False
+
+        self.email.data = self.email.data.lower()
+        return True
 
 class FullRegisterForm(PhoneForm):
     """
@@ -25,8 +33,24 @@ class FullRegisterForm(PhoneForm):
         choices=([(None, 'Choose your timezone...'),]
             + [(timezone, timezone) for timezone in get_timezone_list()]))
 
+    def validate(self):
+        rv = Form.validate(self)
+        if not rv:
+            return False
+
+        self.email.data = self.email.data.lower()
+        return True
+
 class LoginForm(Form):
     """A basic login form. Includes an email field and a password field.
     """
     email = EmailField('Email Address', [Required(), Email()])
     password = PasswordField('Password', [Required()])
+
+    def validate(self):
+        rv = Form.validate(self)
+        if not rv:
+            return False
+
+        self.email.data = self.email.data.lower()
+        return True

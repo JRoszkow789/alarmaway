@@ -1,178 +1,230 @@
 <!DOCTYPE html>
-<html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
 <head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
-<title>
-  {% block title %}AlarmAway -- Welcome to your simple morning{% endblock %}
-</title>
-<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
-<link rel="stylesheet" type="text/css"
-     href="{{url_for('static', filename='css/cerulean.css')}}" />
-{% block preheader %}{% endblock %}
-<style type="text/css">
-  #footer {
-    height: 50px;
-  }
-  .aa-nav {
-    margin-bottom: 0;
-    background: inherit;
-  }
-  .aa-nav-inner {
-    background: inherit;
-    max-width: 900px;
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: right;
-    border: None;
-  }
-  .aa-footer-nav {
-    margin: 0;
-    background:inherit);
-  }
-  .aa-footer-nav-inner {
-    background: inherit;
-    max-width: 900px;
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: right;
-    border: None;
-  }
-  .hero-content {
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
-  }
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>{% block html_title %}Welcome to AlarmAway{% endblock %}</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/readable-bootstrap.min.css') }}">
+
+  <style>
+    body {
+      padding-top: 60px;
+    }
+    .signin-modal-form {
+      width: 100%;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-top: 20px;
+    }
+    .main-container {
+      padding-top: 60px;
+      padding-bottom: 60px;
+    }
+    .footer-container {
+      margin-bottom: -10px;
+      padding-top: 60px;
+      padding-bottom: 30px;
+      background: url('{{ url_for("static", filename="img/hexabump.png") }}');
+      color: #999999;
+    }
+    .footer-container-row {
+      padding-bottom: 30px;
+    }
+    .footer-container-row a {
+      color: inherit;
+    }
+    .footer-header {
+      color: #CCC;
+    }
+    .centered {
+      text-align: center;
+    }
+    .v-centered {
+      vertical-align: middle;
+    }
   </style>
+  {% block header_addin %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-responsive.min.css') }}">
+
+  <script src="{{ url_for('static', filename='js/vendor/modernizr-2.6.2.min.js') }}"></script>
 </head>
+<body>
+  <!--[if lt IE 7]>
+      <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+  <![endif]-->
 
-<body class="bg-dark-grid">
+  <!-- This code is taken from http://twitter.github.com/bootstrap/examples/hero.html -->
 
-<!-- Top Nav bar. Can be overridden if necessary with block meta_nav. -->
-{% block meta_nav %}
-  <div class="navbar aa-nav">
-    <div class="navbar-inner aa-nav-inner">
-    {% block meta_nav_content %}
-      {% if session.user_id %}
-        <a class="btn btn-primary" href="{{ url_for('users.logout') }}">Logout</a>
-        <a class="btn btn-warning" href="{{ url_for('users.home') }}">Your Account</a>
-      {% else %}
-        <a class="btn btn-primary" href="{{ url_for('users.login') }}">Sign In</a>
-        <a class="btn btn-warning" href="{{ url_for('users.register') }}">Sign Up</a>
-      {% endif %}
-    {% endblock %}
-    </div>
-  </div>
-{% endblock %}
-<!-- End Meta nav area -->  
-
-<!-- Main 'Hero Unit' header. Can be customized with block's 'hero_title' and
-     'hero_subtitle', respectively. Can also be extended beneath the titling
-     with block hero_extras.-->
-  <div class="hero-unit bg-light-grid t-center">
-    <div class="hero-content">
-      <h1>
-      {% block hero_title %}
-        <span class="header-dark">Wake Up To A </span>
-        <span class="header-blue">Good</span>
-        <span class="header-dark">Morning</span>
-      {% endblock %}
-      </h1>
-      <h4>
-      {% block hero_subtitle %}
-        Alarm Away, <span class="header-dark">Waking Up</span> A Revolution
-      {% endblock %}
-      </h4>
-      {% block hero_extras %}{% endblock %}
-    </div>
-  </div>
-<!-- End hero header area. -->
-
-<!-- Begin Main Container Area. -->
-{% block container %}
-<div class="container">
-  <div class="row well well-large major-container">
-    <!-- For more customization. -->
-    {% block pre_flasher %}{% endblock %}
-
-    {% block flasher %}
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="row zero-row">
-            <div class="alert">
-              <button type="button" data-dismiss="alert" class="close">
-                x
-              </button>
-              <h3 class="text-left">Your Messages</h3>
-              <ul class="unstyled">
-                <!-- Display error messages in red, with a red 'Oops...' badge. -->
-                {% for category, msg in messages %}
-                  {% if category=='error' %}
-                    <li>
-                      <span class="label label-important">Oops...</span>
-                      <span class="text-error">{{ msg }}</span>
-                    </li>
-                  {% endif %}
-                {% endfor %}
-
-                <!-- Display success messages in green, with a green success badge. -->
-                {% for category, msg in messages %}
-                  {% if category=='success' %}
-                    <li>
-                      <span class="label label-success">Success!</span>
-                      <span class="text-success">{{ msg }}</span>
-                    </li>
-                  {% endif %}
-                {% endfor %}
- 
-                <!-- Display any other messages in blue, with a blue info badge. -->
-                {% for category, msg in messages %}
-                  {% if category not in ['error', 'success'] %}
-                    <li>
-                      <span class="label label-info">Info</span>
-                      <span class="text-info">{{ msg }}</span>
-                    </li>
-                  {% endif %}
-                {% endfor %}
-              </ul>
-            </div>
+  <div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
+        <a class="brand" href="{{ url_for('frontend.home') }}">AlarmAway</a>
+        <div class="nav-collapse collapse">
+          <div class="pull-right">
+            {% if g.user %}
+              <div class="btn-group">
+                <a class="btn btn-primary" href="#"><i class="icon-user icon-white"> </i>
+                  {{ g.user.name.capitalize() }}
+                </a>
+                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                  <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a href="{{ url_for('users.home') }}"><i class="icon-home"></i> Home</a></li>
+                  <li><a href="{{ url_for('alarms.add') }}"><i class="icon-time"></i> Create alarm</a></li>
+                  <li class="divider"></li>
+                  <li><a href="{{ url_for('users.logout') }}"><i class="icon-ban-circle"></i> Sign Out</a></li>
+                </ul>
+              </div>
+            {% else %}
+              <a href="{{ url_for('users.register') }}" class="btn btn-primary">Sign Up</a>
+              <a href="#signinModal" role="button" class="btn" data-toggle="modal">Sign In</a>
+            {% endif %}
           </div>
-        {% endif %}
-      {% endwith %}
-    {% endblock %}
-    <!-- End Flasher Area -->
-
-    <!-- Begin Main Content Area -->
-    {% block content %}{% endblock %}
-    <!-- End Main Content Area -->
-  </div>
-</div>
-{% endblock %}
-<!-- End Main Container -->
-
-<!-- Begin Footer Navbar -->
-<div id="footer">
-    <div class="navbar aa-footer-nav">
-      <div class="navbar-inner aa-footer-nav-inner">
-        <a href="{{ url_for('frontend.home') }}" class="brand">Alarm Away</a>
-        <ul class="nav">
-          <li class="active"><a href="{{ url_for('frontend.home') }}">Home</a></li>
-          <li>
-            <a href="{{ url_for('users.register') }}"><strong>Sign Up Now</strong></a>
-          </li>
-          <li><a href="#">How It Works</a></li>
-          <li><a href="#">About Us</a></li>
-          <li><a href="#">FAQ</a></li>
-          <li><a href="#">Help</a></li>
-          <li><a href="#">Contact Us</a></li>
-        </ul>
+        </div><!--/.nav-collapse -->
       </div>
     </div>
-</div>
-<!-- Load JS last for page load speed benefits. -->
-<script src="http://code.jquery.com/jquery-latest.js"></script>
-<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+  </div>
+
+  {% block page_header_area %}
+  <div class="page-header">
+    <div class="container">
+      <h1>{% block page_header_title %}Wake up to a Good Morning{% endblock %}</h1>
+      <h1><small>
+        {% block page_header_subtitle %}
+          Introducing AlarmAway, A revolutionary alarm and wake up call service.
+        {% endblock %}
+      </small></h1>
+      {% block page_header_addin %}{% endblock %}
+    </div>
+    {% endblock %}
+  
+
+    <!-- Sign in modal -->
+    {% if not g.user %}
+      {% block signin_modal %}
+      <div id="signinModal" class="modal hide fade" tabindex="-1" role="dialog"
+          aria-labelledby="signinModalLabel" aria-hidden="true">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+          <h3 id="signinModalLabel">AlarmAway - User Login</h3>
+        </div>
+        <div class="modal-body">
+          <h4>Don't have an account? <a href="{{ url_for('users.register') }}">Sign up for <strong>Free &raquo;</strong></a></h4>
+          <form class="signin-modal-form" action="{{ url_for('users.login') }}" method="POST">
+            {{ signin_form.csrf_token }}
+            {{ signin_form.email(class="input-block-level", placeholder="Email address") }}
+            {{ signin_form.password(class="input-block-level", placeholder="Your password") }}
+        </div>
+        <div class="modal-footer">
+          <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+          <input type="submit" class="btn btn-primary" value="Login">
+          </form>
+        </div>
+      </div>
+      {% endblock %}
+    {% endif %}
+      <!-- End sign in modal -->
+
+    <!-- Begin main container -->
+
+    {% block main_container %}
+    <div class="main-container" id="signup-container">
+      <div class="container">
+
+        <!-- Begin Main Page content area -->
+
+        {% block main_content %}{% endblock %}
+
+        <!-- End Main content area -->
+
+      </div>
+    </div>
+    {% endblock %}
+
+    <!-- End Main Container -->
+
+    <!-- Begin footer container -->
+
+    {% block footer_container %}
+    <div class="footer-container">
+      <div class="container">
+        <div class="row footer-container-row">
+
+          <div class="span4">
+            <h4 class="footer-header"><a href="{{ url_for('frontend.home') }}">AlarmAway</a></h4>
+            <ul class="unstyled">
+              <li><a href="{{ url_for('frontend.home') }}">Home</a></li>
+              <li><a href="{{ url_for('users.register') }}"><strong>Sign Up!</strong></a></li>
+              <li><a href="#">Blog</a></li>
+              <li><a href="#">About</a></li>
+            </ul>
+          </div>
+
+          <div class="span4">
+            <h4 class="footer-header">Help</h4>
+            <ul class="unstyled">
+              <li><a href="#">How It Works</a></li>
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Privacy</a></li>
+              <li><a href="#">Terms &amp; Conditions</a></li>
+            </ul>
+          </div>
+
+          <div class="span4">
+            <h4 class="footer-header">Get In Touch</h4>
+            <ul class="unstyled">
+              <li><a href="#">Facebook</a></li>
+              <li><a href="#">Twitter</a></li>
+              <li><a href="#">Contact Form</a></li>
+              <li><a href="#">Email Us</a></li>
+            </ul>
+          </div>
+
+      </div>
+      
+      <footer>
+        <p class="pull-right"><a href="#">Back to top</a>
+        <p>&copy; 2013 Canopy Innovation &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
+      </footer>
+
+    </div>
+  </div>
+  {% endblock %}
+
+  <!-- END FOOTER CONTAINER -->
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src={{ url_for("static", filename="js/vendor/jquery-1.9.0.min.js") }}><\/script>')</script>
+  <script src="{{ url_for('static', filename='js/vendor/bootstrap.min.js') }}"></script>
+
+  <script src="{{ url_for('static', filename='js/plugins.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <script type="text/javascript">
+    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  </script>
+
+  <!-- ADD-IN AREA AT BOTTOM OF TEMPLATE FOR SCRIPTS, ETC. -->
+  {% block footer_addin %}{% endblock %}
+
+  <script>
+      var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
+      (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+      g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+      s.parentNode.insertBefore(g,s)}(document,'script'));
+  </script>
 </body>
 </html>

@@ -8,7 +8,7 @@ def populate_alarm_times():
         ('HH:MM', 'hh:MM AM-PM') where the HH is 24 hour time,
         the hh is 12 hour time.
     """
-    alarm_times = [(None, 'Choose a time'),]
+    alarm_times = [(None, 'Pick!'),]
     for hour in range(0, 24):
         for minute in range(0, 60, 10):
             alarm_times.append((

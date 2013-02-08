@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
 import logging
-from flask import (
-    Blueprint, flash, g, redirect, request, render_template, session, url_for
-    )
+
+from flask import (Blueprint, flash, g, jsonify, redirect, request,
+    render_template, session, url_for)
 from sqlalchemy.exc import IntegrityError
 
 from .. import db, task_manager
@@ -47,10 +47,54 @@ def add():
             verification_code = generate_verification_code()
             task_manager.processPhoneVerification(new_phone, verification_code)
             session['verification_code'] = verification_code
+
+            if session.pop('firstphone', False):
+                session['firstalarm'] = True
+                return redirect(url_for('alarms.add'))
+
             flash('New phone number added!', 'success',)
             return redirect(url_for('users.home'))
     flash_errors(form)
-    return render_template('phones/add.html', form=form)
+
+    if session.get('firstphone', False):
+        template_name = 'firstphone'
+    else:
+        template_name = 'add'
+
+    return render_template('phones/'+template_name+'.html', form=form)
+
+@mod.route('/remove/<phone_id>')
+@login_required
+def remove(phone_id):
+    """Standard view for removing a phone number from the system. Requires
+    a logged in user who owns the requested phone to call this method,
+    then attempts to delete the phone from db and alerts user of status.
+    """
+
+    phone = Phone.query.filter_by(id=phone_id, owner=g.user).first()
+    if not phone:
+        flash("Phone not found or ownership not verified.", 'error')
+        return redirect(url_for('users.home'))
+    p_id = phone.id # For logging
+    db.session.delete(phone)
+    try:
+        db.session.commit()
+    except Exception, err:
+        logger.error("""
+            Couldnt commit phone deletion.
+            Phone id: %s, user id: %s
+            user's phones: %s
+            message: %s
+            """ % (phone.id, g.user.id, g.user.phones, err)
+        )
+        flash(
+            "Oops, something didnt work right, please try again.",
+            'error',
+        )
+    else:
+        logger.info("Phone removed {}".format(p_id))
+        flash('Phone successfully removed!', 'success')
+    return redirect(url_for('users.home'))
 
 @mod.route('/verify/<phone_id>', methods=['GET', 'POST'])
 @login_required
@@ -98,35 +142,6 @@ def verify(phone_id):
     flash_errors(form)
     return render_template('phones/verify.html', form=form, phone=phone)
 
-@mod.route('/remove/<phone_id>')
-@login_required
-def remove(phone_id):
-    """Standard view for removing a phone number from the system. Requires
-    a logged in user who owns the requested phone to call this method,
-    then attempts to delete the phone from db and alerts user of status.
-    """
-
-    phone = Phone.query.filter_by(id=phone_id, owner=g.user).first()
-    if not phone:
-        flash("Phone not found or ownership not verified.", 'error')
-        return redirect(url_for('users.home'))
-    p_id = phone.id # For logging
-    db.session.delete(phone)
-    try:
-        db.session.commit()
-    except Exception, err:
-        logger.error("""
-            Couldnt commit phone deletion.
-            Phone id: %s, user id: %s
-            user's phones: %s
-            message: %s
-            """ % (phone.id, g.user.id, g.user.phones, err)
-        )
-        flash(
-            "Oops, something didnt work right, please try again.",
-            'error',
-        )
-    else:
-        logger.info("Phone removed {}".format(p_id))
-        flash('Phone successfully removed!', 'success')
-    return redirect(url_for('users.home'))
+@mod.route('/_verify')
+def _verify_phone():
+    return jsonify(result='Thanks for trying')

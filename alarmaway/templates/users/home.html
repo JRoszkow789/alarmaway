@@ -1,207 +1,156 @@
 {% extends "base.html" %}
-{% block preheader %}
+{% block header_addin %}
 <style type="text/css">
-  .alarm-container {
-    margin: 30px auto 60px auto;
-    padding: 20px 30px 20px 30px;
-    background:url({{ url_for('static', filename='img/wild_oliva.png') }});
-    border: 3px solid #F2F2F2;
-    -webkit-border-radius: 5px;
-       -moz-border-radius: 5px;
-            border-radius: 5px;
-    -webkit-box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
-       -moz-box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
-            box-shadow: 0, 1px, 2px, rgba(0,0,0,.05);
-  }
-  .alarm-cell {
-    width: 175px;
-    height: 150px;
-    margin: 10px;
-    padding: 15px;
-    background: #FFF;
-    text-align: center;
-    float: left;
+  .phone-alert {
+    overflow: auto;
   }
 </style>
 {% endblock %}
-{% block pre_flasher %}
-<div class="page-header">
-  <h1 class="header-dark t-center">
-    {{ user.email }} <small>Alarm Away account</small>
-  </h1>
+{% block page_header_title %}{{ user.name }}{% endblock %}
+{% block page_header_subtitle %}Your AlarmAway account{% endblock %}
+{% block main_content %}
+<div class="row">
+  <ul class="thumbnails">
+    {% if alarms %}
+      {% for alarm in alarms %}
+        <li class="span4">
+          <div class="thumbnail">
+            <img src="http://placehold.it/300x200">
+            <div class="caption">
+              <h3>
+                {% if alarm.active %}
+                  <span class="label label-success">Currently Set</span>
+                {% else %}
+                  <span class="label labe-important">Not Currently Set</span>
+                {% endif %}
+              </h3>
+              <h3>Alarm Information</h3>
+              <dl>
+                <dt><strong>Phone</strong></dt>
+                <dd>{{ alarm.phone.number|format_phone_number }}</dd>
+                <dt>Next Ring</dt>
+                <dd>{% if alarm.active %}{{ alarm.getNextRunTime(local=true)|format_user_date }}{% else %}Inactive{% endif %}</dd>
+                <dt>Schedule</dt>
+                <dd>Every day</dd>
+              </dl>
+              <p>
+                {% if alarm.active %}
+                  <a href="{{ url_for('alarms.unset', alarm_id=alarm.id) }}" class="btn btn-primary">Turn off</a>
+                {% else %}
+                  <a href="{{ url_for('alarms.set', alarm_id=alarm.id) }}" class="btn btn-primary">Set Alarm</a>
+                {% endif %}
+                <a href="#" class="btn btn">Modify</a>
+              </p>
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    {% endif %}
+      <li class="span4">
+        <div class="thumbnail">
+          <img src="http://placehold.it/300x200">
+          <div class="caption">
+            <h3><span class="label label-success">Example</span></h3>
+            <a href="{{ url_for('alarms.add') }}"><h3>Create an Alarm!</h3></a>
+            <dl>
+              <dt><strong>Phone</strong></dt>
+              <dd>(555)555-1234</dd>
+              <dt>Next Run</dt>
+              <dd>Saturday, February 2</dd>
+              <dt>Schedule</dt>
+              <dd>Every Day</dd>
+            </dl>
+            <p>
+              <a href="{{ url_for('alarms.add') }}" class="btn btn-primary btn-block">Create Your Own</a>
+            </p>
+          </div>
+        </div>
+      </li>
+  </ul>
+</div>
+
+<div class="row">
+  <div class="span4">
+    <h3>Your Phones</h3>
+    {% if phones %}
+      {% for phone in phones %}
+        {% if phone.verified %}
+          <div class="alert alert-success phone-alert">
+            <p><strong>Number: </strong>{{ phone.number|format_phone_number }}</p>
+            <p><strong>Status: </strong>Verified
+              <span class="pull-right"><a href="{{ url_for('phones.remove', phone_id=phone.id) }}" class="btn btn-mini"><i class="icon-trash"></i> Remove </a></span>
+            </p>
+          </div>
+        {% else %}
+          <div class="alert alert-error phone-alert" id="unverified-phone-div">
+            <p><strong>Number: </strong>{{ phone.number|format_phone_number }}</p>
+            <p><strong>Status: </strong>Not Verified <button id="verify-phone-button" class="btn btn-primary btn-small">Verify</button>
+              <span class="pull-right" id="remove-phone-link"><a href="{{ url_for('phones.remove', phone_id=phone.id) }}" class="btn btn-mini"><i class="icon-trash"></i> Remove </a></span>
+            </p>
+            <p>
+            <form class="form-horizontal hidden" id="verify-phone-form" method="POST"
+                action="{{ url_for('phones.verify', phone_id=phone.id) }}">
+              {{ form.csrf_token }}
+              {{ form.verification_code(id="form-verification-code", class="input-tiny") }}
+              <input type="submit" class="btn btn-primary btn-small" value="Verify &raquo;">
+                <!--
+                <input type="hidden" name="hidden-phone-id" id="hidden-phone-id" value="{{ phone.id }}">
+                <button type="button" class="btn btn-primary btn-small" id="verify-phone" name="verify-phone-submit" value="Verify &raquo;" data-loading-text="Loading...">
+                -->  
+              </form>
+            </p>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="alert">
+        <p class="lead centered"><a href="{{ url_for('phones.add') }}">Add a phone &raquo;</a></p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="span6 offset2">
+    <h3>Your information</h3>
+    <dl>
+      <dt>Member Since</dt>
+      <dd>{{ user.created|format_user_date }}</dd>
+      <dt>{{ user.name }}</dt>
+      <dd>Not you? <a href="{{ url_for('users.logout') }}">Switch users</a></dd>
+      <dd><a href="#">Update account info</a></dd>
+      <dt>Alarms</dt>
+      <dd>You have {{ user.alarms.filter_by(active=true).count() }} active alarms</dd>
+      <dd><a href="#">View history &raquo;</a></dd>
+    </dl>
+  </div>
 </div>
 {% endblock %}
-{% block content %}
-{% if not user.phones.all() %}
-  <div class="row row-zero">
-    <div class="alert alert-success t-center">
-      <h3>Add a phone number!</h3>
-      <p>To utilize the AlarmAway service you need to connect your phone. A
-        cell phone works best!
-      </p>
-      <form action="{{ url_for('phones.add') }}" method="POST"
-          class="form-inline">
-        {{ form.csrf_token }}
-        <strong>{{ form.phone_number.label }}</strong>
-        {{ form.phone_number }}
-        <input type="submit" class="btn btn-primary" value="submit">
-      </form>
-    </div>
-  </div>
-{% elif verify_phone %}
-  <div class="row zero-row">
-    <div class="alert alert-error t-center">
-      <h4>Verify Your Phone Number!</h4>
-      <p>The Alarm Away service will only work with phone numbers that you have
-        verified ownership of. You should have already received an SMS message
-        containing a 7 digit verification code. Please enter this code below to
-        verify the number.
-      </p>
-      <form class="form-inline" method="POST"
-          action="{{ url_for('phones.verify', phone_id=verify_phone) }}">
-        {{ form.csrf_token }}
-        {{ form.verification_code(class="input-medium",
-            placeholder="Verification Code") }}
-        <input type="submit" class="btn" value="Verify Phone">
-      </form>
-      <p>Wrong Number? <a href="#">Change it here.</a> Or we can
-        <a href="#">Send a new verification code.</a>
-      </p>
-    </div>
-  </div>
-{% endif %}
-<div class="tabbable">
-  <div class="nav-tab-container">
-    <ul class="nav nav-tabs t-center">
-      <li class="active"><a href="#alarmtab" data-toggle="tab">Alarms</a></li>
-      <li><a href="#accounttab" data-toggle="tab">Account</a></li>
-      <li><a href="#moretab" data-toggle="tab">More</a></li>
-    </ul>
-  </div>
-  <div class="tab-content">
-    <div class="tab-pane active" id="alarmtab">
-      <h2 class="t-left">Your alarms:</h2>
-      {% if not user.alarms %}
-      <div class="alert alert-success">
-        <button type="button" class="close" data-dismiss="alert">x</button>
-        <h4>Add Your First Alarm!</h4>
-        <p>Checkout the example below, and add your custom alarm to change the way
-          you start your morning.</p>
-      </div>
-      {% endif %}
-      <div class="row alarm-container">
-      {% for alarm in user.alarms %}
-        <div class="alarm-cell">
-          <p>
-            <strong>Status: </strong>
-            {% if alarm.active %}
-            <span class="label label-success">
-            {% else %}
-            <span class="label label-important">
-            {% endif %}
-            <strong>{{ alarm.active|format_alarm_status }}</strong>
-            </span>
-          </p>
-          <p>
-          {% if alarm.next_run_time %}
-            <strong>Goes off: </strong>{{ alarm.next_run_time }}
-          {% else %}
-            <strong>Time: </strong>{{ alarm.get_local()|format_alarm_time }}
-          {% endif %}
-          </p>
-          <p>
-            <strong>Phone: </strong>{{ alarm.phone.number|format_phone_number }}
-          </p>
-          {% if alarm.active %}
-          <a href="{{ url_for('alarms.unset', alarm_id=alarm.id) }}"
-              class="btn btn-primary btn-large">
-            <strong>Turn Off Alarm &raquo;</strong>
-          </a>
-          {% else %}
-          <a href="{{ url_for('alarms.set', alarm_id=alarm.id) }}" 
-              class="btn btn-warning btn-large">
-            <strong>Set Alarm &raquo;</strong>
-          </a>
-          {% endif %}
-          <p class="t-center">
-            <a href="{{ url_for('alarms.remove', alarm_id=alarm.id) }}">
-              <span class="text-error">
-                <strong><i class="icon-trash"></i> Remove</strong>
-              </span>
-            </a>this alarm
-          </p>
-        </div>
-      {% else %}
-        <div class="alarm-cell">
-          <p>
-            <strong>Status: </strong>
-            <span class="label label-success"><strong>EXAMPLE</strong></span>
-          </p>
-          <p>
-            <strong>Time: </strong>7:00 AM
-          </p>
-          <p>
-            <strong>Phone: </strong>(555)555-5555
-          </p>
-          <a href="{{ url_for('alarms.add') }}" class="btn btn-primary btn-large">
-            <strong>Make Your Own &raquo;</strong>
-          </a>
-        </div>
-      {% endfor %}
-        <div class="alarm-cell">
-          <p class="t-center">
-            <span class="label label-inverse">Unlimited Alarms!</span>
-          </p>
-          <h1 class="t-center">+</h1>
-          <a href="{{ url_for('alarms.add') }}" class="btn btn-primary btn-large">
-            <strong>Add Alarm &raquo;</strong>
-          </a>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="accounttab">
-      <h2 class="t-left">Your Account: </h2>
-      <div class="row">
-        <div class="span4 well faded-insert">
-          <dl>
-            <dt>Status
-            <dd>{{ user.getStatus() }}
-            {% if user.status < 2 %}
-            <dd><a href="#">Upgrade Account</a>
-            {% endif %}
-            <dt>Member Since
-            <dd>{{ user.created }}
-            <dt>Phones
-            {% for phone in user.phones %}
-            <dd>
-              <a href="{{ url_for('phones.remove', phone_id=phone.id) }}">
-                <i class="icon-trash"></i>
-              </a>
-              {{ phone.number }}
-            {% else %}
-            <dd>No verified phones yet!
-            {% endfor %}
-            <dd><a href="{{ url_for('phones.add') }}">Add Phone &raquo;</a>
-          </dl>
-        </div>
-        <div class="span5 offset1 t-center">
-          <h4>
-            Upgrading to a premium Alarm Away account provides access to
-            <span class="header-dark">multiple alarms, multiple phones,</span>
-            ultimate flexibility and <span class="header-dark">much more</span>
-          </h4>
-          <a href="#" class="btn btn-warning btn-large">
-            <strong>Plans and Pricing &raquo;</strong>
-          </a>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="moretab">
-      <h4 class="t-center">More Info Here</h4>
-      <p class="t-left">
-        More information here and here and here.
-      </p>
-    </div>
-  </div>
-</div>
+{% block footer_addin %}
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('#verify-phone-button').click(function() {
+      $('#verify-phone-form').toggleClass('hidden');
+      $('#remove-phone-link').toggleClass('hidden');
+    });
+
+    /* Add event Handler to verify-phone button */
+    $('#verify-phone').click(function() {
+      /* Get phone id and verification code from form. */
+      var verCode = $('input[name=verification_code]').val();
+      var phoneID = $('input[name=hidden-phone-id]').val();
+      var userID = {{ g.user.id }};
+      
+      /* Update button to 'loading'. */
+      $(this).button('loading');
+    /* send json request. */
+    /* upon success:
+          update div id 'unverified-phone-div' to success alert.
+          update div content to reflect verification
+       upon failure:
+       show error message */
+      console.log("verCode: " + verCode);
+      console.log("phoneID: " + phoneID);
+      console.log("userID: " + userID);
+    });
+  });
+</script>
 {% endblock %}

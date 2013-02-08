@@ -1,24 +1,37 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="row zero-row">
-  <div class="alert alert-error t-center">
-    <h3>Verify Your Phone Number!</h3>
-    <h4 class="header-dark">{{ phone.number|format_phone_number }}</h4>
-    <p>The Alarm Away service will only work with phone numbers that you have
-      verified ownership of. You should have already received an SMS message
-      containing a 7 digit verification code. Please enter this code below to
-      verify the number.
-    </p>
-    <form class="form-inline" method="POST"
-        action="{{ url_for('phones.verify', phone_id=phone.id) }}">
-      {{ form.csrf_token }}
-      {{ form.verification_code(class="input-medium",
-          placeholder="Verification Code") }}
-      <input type="submit" class="btn" value="Verify Phone">
-    </form>
-    <p>Wrong Number? <a href="#">Change it here.</a> Or we can
-      <a href="#">Send a new verification code.</a>
-    </p>
+{% block page_header_title %}{{ g.user.name }}{% endblock %}
+{% block page_header_subtitle %}Verify your phone number{% endblock %}
+{% block main_content %}
+<div class="row">
+  <div class="span8 offset2">
+  </div>
+</div>
+
+<div class="row">
+  <div class="span10 offset1">
+    <div class="well well-large">
+      
+      <div class="row">
+        <div class="span6 offset2">
+          <h3 class="centered">Enter the verification code we sent you: </h3>
+          <p class="centered"><strong>{{ phone.number|format_phone_number }}</strong></p>
+          <form class="form-inline" action="{{ url_for('phones.verify', phone_id=phone.id) }}" method="POST">
+            {{ form.csrf_token }}
+            <p>
+              <strong>Verification Code</strong>
+              {{ form.verification_code(class="input-large", placeholder="Enter your code here...") }}
+              <input type="submit" class="btn btn-primary" value="Verify Phone">
+            </p>
+          </form>
+          <div class="row">
+            <p class="centered">
+              Need a new verification code? <a href="#">Click here</a>
+            </p>
+          </div>
+        </div>
+      </div>
+        
+    </div> <!-- END well -->
   </div>
 </div>
 {% endblock %}

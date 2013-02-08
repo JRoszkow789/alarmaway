@@ -1,75 +1,51 @@
 {% extends "base.html" %}
-{% block preheader %}
-<style type="text/css">
-  #orig {
-    color: #317EAC;
-  }
-</style>
-{% endblock %}
-{% block hero_title %}Make Waking Up Easier{% endblock %}
-{% block hero_subtitle %}
-    Let us manage the parts you hate, and finally treat yourself to a
-    Good Morning
-{% endblock %}
-{% block content %}
-<div class="row zero-row">
-  <div class="span5 t-center">
-    <h4> 
-      Experience a revolutionary movement to simplify your morning
-    </h4>
-    <p class="lead">Waking up can be hard. Sometimes it's tossing and
-      turning, once in a while a hangover, or simply staying up too late,
-      but no matter the reason, on many mornings the alarm ringing is a
-      dreaded sound.
-    </p>
-    <h4>Not Anymore</h4>
-    <p class="lead">Already have an account?
-      <a href="{{ url_for('users.login') }}">Sign In Here</a>
-    </p>
-  </div>
-  <div class="span6 t-center faded-insert">
-    <h4 class="t-center header-dark">Create an account to manage your morning</h4>
-    <form action="{{ url_for('users.register') }}" method="POST">
-      {{ form.csrf_token }}
-      <label class="header-dark">
-        <strong>Email Address</strong>
-      </label>
-      {{ form.email(placeholder="e.g. yourname@example.com") }}
-      <span class="help-block myblock">
-        Dont worry, your info is safe with us! Check out our
-        <a href="#">Privacy Policy</a>
-      </span>  
-      <label class="header-dark">
-        <strong>Password</strong>
-      </label>
-      {{ form.password(placeholder="Create a password") }}
-      <span class="help-block">
-        Choose a secure password and write it down somewhere safe!
-      </span>
-      <label class="header-dark">
-        <strong>Phone Number</strong>
-      </label>
-      {{ form.phone_number(placeholder="e.g. 555-555-5555") }}
-      <span class="help-block">
-        We'll send you a verification code via text message (SMS)
-        <br /><a href="#">How does this work?</a>
-      </span>
-      <label class="header-dark">
-        <strong>Time Zone</strong>
-      </label>
-      {{ form.timezone }}
-      <span class="help-block">
-        Just to make sure we don't accidentally wake you up at 2 A.M!
-      </span>
-      <h4 class="header-dark">
-        Now just set your alarm!
-      </h4>
-      <p class="t-center">
-      <button type="submit" class="btn btn-warning btn-large">
-        <strong>Get Started &raquo;</strong>
-      </button>
-      </p>
-    </form>
+{% block page_header_title %}Create an Account{% endblock %}
+{% block page_header_subtitle %}And experience all that AlarmAway has to offer{% endblock %}
+{% block main_container %}
+<div class="home-signup-container" id="signup-container">
+  <div class="container">
+
+    <div class="row">
+      <div class="span10 offset1">
+        <h3 class="centered">Welcome to AlarmAway</h3>
+        <p class="lead centered">Already registered? <a href="{{ url_for('users.login') }}">Sign in here</a></p>
+        <div class="row">
+          <div class="span6 offset2">
+            <form class="form-horizontal" id="main-signup-form" action="{{ url_for('users.trial') }}" method="POST">
+              {{ form.csrf_token }}
+              <div class="control-group">
+                <label class="control-label" for="username">Username</label>
+                <div class="controls">
+                  {{ form.name(id="username", class="input-xlarge", placeholder="Create a username") }}
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="control-label" for="email">Email</label>
+                <div class="controls">
+                  {{ form.email(id="email", class="input-xlarge", placeholder="Your email address") }}
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="control-label" for="password">Password</label>
+                <div class="controls">
+                  {{ form.password(id="password", class="input-xlarge", placeholder="Create a password") }}
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="control-label" for="timezone">Timezone</label>
+                <div class="controls">
+                  {{ form.timezone(id="timezone", class="input-xlarge") }}
+                </div>
+              </div>
+              <p class="centered">
+                <input type="submit" class="btn btn-primary btn-large" value="Sign Up Free">
+              </p>
+            </form>
+          </div>
+        </div>
+        <p class="centered lead">AlarmAway will change the way you wake up in the morning, promoting a healthier lifestyle. Check it out today.</p>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

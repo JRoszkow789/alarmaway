@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function
-from flask import (Blueprint, flash, g, redirect, render_template, request,
+from flask import (Blueprint, g, redirect, render_template, request,
         url_for, session)
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -8,7 +8,7 @@ from werkzeug import check_password_hash, generate_password_hash
 from .. import db, task_manager
 from ..utils import flash_errors, generate_verification_code
 from .decorators import login_required, non_login_required
-from .forms import FullRegisterForm, LoginForm, MainRegisterForm
+from .forms import LoginForm, MainRegisterForm
 from .models import User
 from ..phones.models import Phone
 from ..phones.forms import PhoneForm, PhoneVerificationForm
@@ -23,7 +23,7 @@ def register():
     Upon succesful input validation, creates a new user.
     """
 
-    form = FullRegisterForm(request.form)
+    form = MainRegisterForm(request.form)
     if form.validate_on_submit():
         new_user = User(
             email=form.email.data,
@@ -69,18 +69,18 @@ def register():
         return redirect(url_for('users.home')) # END form.validate_on_submit
 
     flash_errors(form)
-    return render_template('users/register.html', form=form)
+    signin_form = LoginForm(request.form)
+    return render_template('users/register.html', form=form, signin_form=signin_form)
 
 @mod.route('/try', methods=['GET', 'POST'])
 def trial():
     """A view to handle the registration form on the home page."""
     form = MainRegisterForm(request.form)
     if form.validate_on_submit():
-        name = None if not form.name.data else form.name.data
         user = User(
             email=form.email.data,
             password=generate_password_hash(form.password.data),
-            name=name,
+            name=form.name.data,
             timezone=form.timezone.data,
         )
         db.session.add(user)
@@ -94,11 +94,12 @@ def trial():
             task_manager.processWelcomeEmail(user)
             logger.info("New user registered: {}".format(user))
             session['user_id'] = user.id
-            flash("Registration complete. Welcome to AlarmAway!")
-            return redirect(url_for('users.home'))
+            session['firstphone'] = True
+            return redirect(url_for('phones.add'))
     flash_errors(form)
+    signin_form = LoginForm()
     #This ruins the whole blueprint idea and needs to be fixed
-    return render_template('frontend/index.html', form=form)
+    return render_template('frontend/index.html', form=form, signin_form=signin_form)
 
 
 @mod.route('/home')
@@ -111,6 +112,7 @@ def home():
 
     user = g.user
     need_verify_phone, form = None, None
+    alarms = user.alarms.all()
     phones = user.phones.all()
     if not phones:
         form = PhoneForm(request.form)
@@ -123,7 +125,9 @@ def home():
     return render_template('users/home.html',
         user=user,
         verify_phone=need_verify_phone,
-        form=form
+        form=form,
+        alarms=alarms,
+        phones=phones,
         )
 
 @mod.route('/account')
@@ -145,7 +149,7 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if not user:
-            form.email.errors.append('Username/email does not exist')
+            form.email.errors.append('No account found with that email address')
         elif not check_password_hash(user.password, form.password.data):
             form.password.errors.append("Invalid password")
             logger.info("Invalid password attempt for user {}".format(user))
@@ -154,7 +158,7 @@ def login():
             logger.info("Successful user login: {}".format(user.id))
             return redirect(url_for('users.home'))
     flash_errors(form)
-    return render_template('users/login.html', form=form)
+    return render_template('users/login.html', signin_form=form, form=form)
 
 @mod.route('/logout')
 def logout():

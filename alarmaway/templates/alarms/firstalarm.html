@@ -8,19 +8,32 @@
 </style>
 {% endblock %}
 {% block page_header_title %}{{ g.user.name }}{% endblock %}
-{% block page_header_subtitle %}Add a new AlarmAway alarm{% endblock %}
+{% block page_header_subtitle %}Welcome to your new AlarmAway account{% endblock %}
 {% block main_content %}
 <div class="row">
   <div class="span8 offset2">
+    <p class="lead centered">With a phone connected to your account, you are now ready to experience AlarmAway in it's fullest</p>
+    <div class="progress progress-striped active">
+      <div class="bar" style="width: 70%;"></div>
+    </div>
   </div>
 </div>
 
 <div class="row">
   <div class="span10 offset1">
-    <div class="well well-large">
+    <div class="well well-small">
+      
+      <div class="row centered">
+        <div class="btn-group">
+          <button class="btn btn-large span2 disabled" rel="tooltip" title="1. Create an Account. Completed!"><h1 class="muted">1</h1></button>
+          <button class="btn btn-large span2 disabled" rel="tooltip" title="2. Add a phone. Completed!"><h1 class="muted">2</h1></button>
+          <button class="btn btn-large span2"><h1>3</h1></button>
+        </div>
+      </div>
+      
       <div class="row">
         <div class="span6 offset2">
-          <h3>Add your alarm</h3>
+          <h3>Last step: Add an Alarm</h3>
           <p>Just pick a time and phone, then click set!</p>
           <form class="form-inline alarm-form" action="{{ url_for('alarms.add') }}" method="POST">
             {{ form.csrf_token }}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block page_header_title %}{{ g.user.name }}{% endblock %}
+{% block page_header_subtitle %}Welcome to your new AlarmAway account{% endblock %}
+{% block main_content %}
+<div class="row">
+  <div class="span8 offset2">
+    <p class="lead centered">Congratulations on creating an AlarmAway account. You're on your way to enjoying a good morning, every morning.</p>
+    <div class="progress progress-striped active">
+      <div class="bar" style="width: 37%;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="span10 offset1">
+    <div class="well well-small">
+      
+      <div class="row centered">
+        <div class="btn-group">
+          <button class="btn btn-large span2 disabled" rel="tooltip" title="1. Create an Account. Completed!"><h1 class="muted">1</h1></button>
+          <button class="btn btn-large span2"><h1>2</h1></button>
+          <button class="btn btn-large span2 disabled" rel="tooltip" title="3. Add an Alarm. This is your next step."><h1 class="muted">3</h1></button>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="span6 offset2">
+          <h3>Step 2: Add a Phone</h3>
+          <p>To use the AlarmAway service you will need to register a phone. Cell Phones work best. <a href="#">Why is this?</a></p>
+          <form class="form-inline" action="{{ url_for('phones.add') }}" method="POST">
+            {{ form.csrf_token }}
+            <p>
+              <strong>Phone number</strong>
+              {{ form.phone_number(class="input-large", placeholder="e.g. (555)555-1234") }}
+              <input type="submit" class="btn btn-primary" value="Add Phone">
+            </p>
+          </form>
+        </div>
+      </div>
+        
+    </div> <!-- END well -->
+  </div>
+</div>
+{% endblock %}

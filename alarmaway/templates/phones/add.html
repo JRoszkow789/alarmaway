@@ -1,11 +1,31 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="span8 offset1 well t-center faded-insert">
-  <form action="{{ url_for('phones.add') }}" method="POST" class="form-inline">
-    {{ form.csrf_token }}
-    <strong>{{ form.phone_number.label }}</strong>
-    {{ form.phone_number }}
-    <input type="submit" class="btn btn-primary" value="submit">
-  </form>
+{% block page_header_title %}{{ g.user.name }}{% endblock %}
+{% block page_header_subtitle %}Add a new phone to your AlarmAway account{% endblock %}
+{% block main_content %}
+<div class="row">
+  <div class="span8 offset2">
+  </div>
+</div>
+
+<div class="row">
+  <div class="span10 offset1">
+    <div class="well well-large">
+      
+      <div class="row">
+        <div class="span6 offset2">
+          <h3>Add a new phone here!</h3>
+          <form class="form-inline" action="{{ url_for('phones.add') }}" method="POST">
+            {{ form.csrf_token }}
+            <p>
+              <strong>Phone number</strong>
+              {{ form.phone_number(class="input-large", placeholder="e.g. (555)555-1234") }}
+              <input type="submit" class="btn btn-primary" value="Add Phone">
+            </p>
+          </form>
+        </div>
+      </div>
+        
+    </div> <!-- END well -->
+  </div>
 </div>
 {% endblock %}

@@ -1,84 +1,147 @@
 {% extends "base.html" %}
-{% block preheader %}
-<style type="text/css">
- .promo-container {
-   max-width: 774px; 
-   margin: 60px auto;
-   text-align: center;
- }
- .promo-header {
-   font-size: 48px;
-   text-align: center;
- }
- .promo-pod {
-   width: 220px;
-   padding: 19px;
-   margin: 0;
-   float: left;
- }
-</style>
-{% endblock %}
-{% block hero_subtitle %}
-  AlarmAway is a simple, revolutionary approach to waking up easier in the
-  morning, and the first step in promoting a
-  <span class="header-dark">Happier</span> and
-  <span class="header-dark">Healthier</span> you.
-{% endblock %} 
-{% block hero_extras %}
-<p class="lead header-dark t-right">
-  And It's Free
-  <button class="btn btn-warning btn-large">Try it now &raquo;</button>
-</p>
-{% endblock %}
-{% block content %}
-  <div class="row zero-row">
-    <div class="span5">
-      <img src="{{ url_for('static', filename='img/alarm-clock-full.png') }}"
-        alt="How AlarmAway Works" class="img-rounded" />
-    </div>
-    <div class="span6 t-center faded-insert">
-      <h3 class="header-dark">Try It Now!</h3>
-      <h3 class="header-dark">Signing up is
-        <span class="header-blue">Fast</span>,
-        <span class="header-blue">Simple</span>, and
-        <span class="header-blue">Free!</span>
-      </h3>
+
+{% block header_addin %}
+  <style>
+    .home-signup-container {
+      padding-top: 60px;
+      padding-bottom: 60px;
+    }
+    .home-marketing-container {
+      padding: 60px 30px 90px 30px;
+      background: url('{{ url_for("static", filename="img/hexabump.png") }}');
+      color: #CCCCCC;
+    }
+    .home-marketing-container h2 {
+      color: #FFFFFF;
+      text-align: center;
+    }
+    .feature-divider {
+      margin: 80px 0;
+    }
+    .feature {
+      padding-top: 120px;
+      overflow: hidden;
+    }
+    .feature-image {
+      -120px;
+    }
+    .feature-image.pull-left {
+      margin-right: 40px;
+    }
+    .feature-image.pull-right {
+      margin-left: 40px;
+    }
+    .feature-heading {
+      font-size: 50px;
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    @media (max-width: 979px) {
+      .feature {
+        height: auto;
+        padding: 0;
+      }
+      .feature-image.pull-left,
+      .feature-image.pull-right {
+        display: block;
+        float: none;
+        max-width: 40%;
+        margin: 0 auto 20px;
+      }
+    }
+  </style>
+  {% endblock %}
+  {% block page_header_addin %}
+  <p class="lead pull-right">And It's <strong>Free </strong>
+  <a class="btn btn-primary btn-large" href="#signup-container">Set An Alarm &raquo;</a></p>
+  {% endblock %} 
+
+  {% block main_container %}
+  <div class="home-signup-container" id="signup-container">
+    <div class="container">
+
       <div class="row">
-        <div class="span4 offset1">
-          <form class="form" action="{{ url_for('users.trial') }}" method="POST">
+        <div class="span4">
+          <img src="{{ url_for('static', filename='img/alarm-clock-full.png') }}">
+        </div>
+        <div class="span8">
+          <p class="lead centered">AlarmAway will change the way you wake up in the morning, promoting a healthier lifestyle. Check it out today.</p>
+          <form class="form-horizontal" id="main-signup-form" action="{{ url_for('users.trial') }}" method="POST">
             {{ form.csrf_token }}
-            {{ form.name(placeholder="Username (optional)") }}
-            {{ form.email(placeholder="Your email address") }}
-            {{ form.password(placeholder="Create a password") }}
-            {{ form.timezone() }}
-            <input type="submit" class="btn btn-warning btn-large span2"
-              value="Sign up free">
+            <div class="control-group">
+              <label class="control-label" for="username">Username</label>
+              <div class="controls">
+                {{ form.name(id="username", class="input-xlarge", placeholder="Create a username") }}
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="email">Email</label>
+              <div class="controls">
+                {{ form.email(id="email", class="input-xlarge", placeholder="Your email address") }}
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="password">Password</label>
+              <div class="controls">
+                {{ form.password(id="password", class="input-xlarge", placeholder="Create a password") }}
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="timezone">Timezone</label>
+              <div class="controls">
+                {{ form.timezone(id="timezone", class="input-xlarge") }}
+              </div>
+            </div>
+            <p class="centered">
+              <input type="submit" class="btn btn-primary btn-large" value="Sign Up Free">
+            </p>
           </form>
         </div>
       </div>
     </div>
   </div>
-  <div class="promo-container">
-    <h1 class="promo-header header-dark">Take Control Of Your Morning</h1>
-    <div class="promo-pod">
-      <h3>Reliability</h3>
-      <button type="button" class="btn btn-large btn-primary">
-        Learn More &raquo;</button>
-    </div>
-    <div class="promo-pod">
-      <h3>Keep It Simple</h3>
-      <p>Paragraph text paragraph text paragraph text paragraph text paragraph
-        text paragraph text paragraph text paragraph text paragraph text</p>
-      <button type="button" class="btn btn-large btn-primary">
-        Learn More &raquo;</button>
-    </div>
-    <div class="promo-pod">
-      <h3>Set And Forget</h3>
-      <p>Paragraph text paragraph text paragraph text paragraph text paragraph
-        text paragraph text paragraph text paragraph text paragraph text</p>
-      <button type="button" class="btn btn-large btn-primary">
-        Learn More &raquo;</button>
+
+  <div class="home-marketing-container">
+    <div class="container">
+      <div class="row">
+        <div class="span4">
+          <h2>Reliable</h2>
+          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+          <p class="pull-right"><a class="btn btn-info" href="#">See For Yourself &raquo;</a></p>
+        </div>
+        <div class="span4">
+          <h2>Simple</h2>
+          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+          <p class="pull-right"><a class="btn btn-info" href="#">Try It Out &raquo;</a></p>
+        </div>
+        <div class="span4">
+          <h2>Adaptable</h2>
+          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p class="pull-right"><a class="btn btn-info" href="#">Learn More &raquo;</a></p>
+        </div>
+      </div>
     </div>
   </div>
-</div>
-{% endblock %}
+
+  <div class="container">
+    
+    <div class="feature">
+      <img class="feature-image pull-right" src="http://placehold.it/256x256">
+      <h2 class="feature-heading">Introducing AlarmAway. <span class="muted">Take Control Of Your Morning</span></h2>
+      <p class="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tor    tor mauris condimentum nibh, ut fermentum massa justo sit amet risus</p>
+    </div>
+
+    <hr class="feature-divider">
+
+    <div class="feature">
+      <img class="feature-image pull-left" src="http://placehold.it/256x256">
+      <h2 class="feature-heading">Never stress over alarms again. <span class="muted">See for yourself.</span>
+      <p class="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tor    tor mauris condimentum nibh, ut fermentum massa justo sit amet risus</p>
+    </div>
+
+    <hr class="feature-divider">
+
+    <!-- END FEATURES -->
+  </div> <!-- /container -->
+  {% endblock %}
